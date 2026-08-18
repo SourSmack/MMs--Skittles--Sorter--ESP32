@@ -26,22 +26,30 @@ int Nema::init(IPlanner &planner ,FastAccelStepperEngine &engine   ){
     return ESP_OK ;
 } 
 
+bool thisTask::notifyWait( uint8_t message , uint32_t delay ){
+    uint32_t taskBits{0};
+    xTaskNotifyWait(0x00 , message , &taskBits , delay) ; 
+    return taskBits & ~message ; 
+}  
 // TODO on notify to end job it'll produce one more motion , and probably shouldnt 
 void Nema::dataRelayTask(void * arg){
     auto instance { *static_cast< Nema*>( arg ) } ;
     auto& scurve = instance.scurve ; 
-    auto& [engineTaskBit , plannerTaskBit] = instance.tasksBits ;  
+    auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = instance.message ;  
+    
+    
+    
 
-    uint32_t taskBits{ 0 } ;
-
-    while ( !(xTaskNotifyWait(0x00 , ~0U , &taskBits , portMAX_DELAY) , taskBits & engineTaskBit )){}
+    while ( !notifyWait( dataRelayStart , portMAX_DELAY)){}
 
     bool relay { true }; 
     
     while ( relay ){
-
+        relay = notifyWait( dataRelayLoopON , 0) ;
         
-        auto [ relay , queueFull ] = ( xTaskNotifyWait(0x00 , plannerTaskBit | engineTaskBit  , &taskBits , portMAX_DELAY),  etl::tuple{ taskBits & engineTaskBit , taskBits & plannerTaskBit} ) ;
+
+
+        auto queueFull =  notifyWait( plannersQueueFull , 0 ) ;
 
         if ( queueFull ){
             motionBlock_t motion{} ;

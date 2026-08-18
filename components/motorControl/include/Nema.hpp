@@ -1,19 +1,29 @@
 #include <cstdint>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "IEngine.hpp"
 #include "IPlanner.hpp"
 #include "FastAccelStepperEngine.h"
 #include "etl/circular_buffer.h"
 #include "etl/optional.h"
+#include "cstdint"
+#include "TaskWrapper.hpp"
+
+struct message_t{
+    uint8_t dataRelayStart : 1 { 0 } ;
+    uint8_t dataRelayLoopON : 1 { 0 }   ; 
+    uint8_t plannerStart : 1 {0 } ;
+    uint8_t plannerLoopON : 1 { 0 } ;
+    uint8_t plannersQueueFull : 1  { 0 }  ; 
+    
+};
+
 
 class Nema : public IEngine 
 {
 private:
 
-    struct tasksBits_t{
-        uint8_t engineTaskBit : 1 { 0 }   ; 
-        uint8_t plannerTaskBit : 1  { 0 }  ; 
-    };
-    tasksBits_t tasksBits{} ;
+    message_t message{} ;
 
     static constexpr uint32_t ALL { 0u };
     static constexpr uint32_t maxBuffor { 32u } ; 
@@ -25,7 +35,7 @@ private:
     IPlanner  *scurve { nullptr }  ; 
     FastAccelStepper *stepper { nullptr } ;
 
-    TaskHandle_t dataRelayTaskHandle { nullptr };  
+    TaskWrapper *dataRelayTaskHandle { nullptr };  
 
     int init(IPlanner &planner ,FastAccelStepperEngine &engine   );
 
