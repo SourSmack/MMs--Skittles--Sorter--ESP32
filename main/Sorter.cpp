@@ -8,34 +8,50 @@
 #include "freertos/event_groups.h"
 
 #include "Sorter.hpp"
+#include "FreeRtosWrapper.hpp"
 
-
+class FreeRtosWrapper;
 
 struct HardwareContext 
 {
     etl::optional< EventGroupIsrTransoptor >  slideSensor ;
-    etl::optional< Nema > slideEngine ; 
+    etl::optional< Nema< ScurvePlanner , FreeRtosWrapper >>  slideEngine ; 
     FastAccelStepperEngine fastSlideEngine; 
 
     etl::optional < Camera > disksSensor ;
     FastAccelStepperEngine fastDisksEngine; 
-    etl::optional< Nema >  disksEngine ; 
+    etl::optional< Nema< ScurvePlanner , FreeRtosWrapperL>>  disksEngine ; 
  
-    EventGroupHandle_t eventGroup;
+    etl::optional< EventFlags_t<EventGroupHandle_t , EventBits_t ,16 >>   eventGroup;
     pc_uart_config_t uart_cfg ;  
     ScurvePlanner planner ;
 };
 
 
-bool config( HardwareContext &peripherals , etl::optional< Sorter > &sorter );
+using genericSorter = Sorter< 
+                        Nema< ScurvePlanner , FreeRtosWrapper > ,
+                        Nema< ScurvePlanner , FreeRtosWrapper > , 
+                        Camera , 
+                        EventGroupIsrTransoptor  , 
+                        EventGroupHandle_t , 
+                        EventBits_t  ,
+                        16 > ;
+
+                        
+bool config( HardwareContext &peripherals , etl::optional< genericSorter < > &sorter );
 
 
+etl::optional< MemberType > EventFlags_t::operator[](uint32_t idx){
+    if ( idx  > commandsNum ) return etl::nullopt ;
 
+    return pEventGropu.*(memberMap[idx]);
+}
+;
 
 extern "C" void app_main(void)
 {
     HardwareContext peripherals ;
-    etl::optional< Sorter > opt_sorter ;
+    etl::optional< genericSorter > opt_sorter ;
 
     if ( !config( peripherals , opt_sorter ) ){
         ESP_LOGE("CONFIG", "Peripherals configuration accured error\n", ESP_FAIL);
@@ -69,7 +85,7 @@ extern "C" void app_main(void)
 
 }
 
-bool config( HardwareContext &peripherals , etl::optional< Sorter > &sorter )
+bool config( HardwareContext &peripherals , etl::optional< genericSorter > &sorter )
 {
     auto& [ slideSensor , slideEngine , fastSlideEngine ,disksSensor , fastDisksEngine , disksEngine , eventGroup ,uartCfg , planner] = peripherals ; 
 

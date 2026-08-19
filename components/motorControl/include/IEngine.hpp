@@ -2,13 +2,17 @@
 #pragma once
 #include "moveStructures.hpp"
 #include <concepts>
+#include "etl/optional.h"
 
 class IPlanner;
 class FastAccelStepperEngine ;
+class IEngine;
 
-template< class   T > 
-concept StaticFactoryEngine = requires(  int8_t stepPin , int8_t dirPin , IPlanner &planner ,FastAccelStepperEngine &engine    ){
-    { T::create(stepPin, dirPin, planner, engine) } -> std::same_as< etl::optional< T >> ; 
+template< class   T ,class ... Args > 
+concept StaticFactoryEngine = 
+    std::derived_from< T , IEngine> &&
+    requires(  Args&& ... args ){
+    { T::create( std::forward<Args>( args )... ) } -> std::same_as< etl::optional< T >> ; 
 };
 
 

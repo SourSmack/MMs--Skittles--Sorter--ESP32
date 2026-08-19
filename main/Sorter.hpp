@@ -100,17 +100,40 @@ enum class sorterStatus{
 
 };
 
+template < 
+    class T ,
+    class MemberType, 
+    uint16_t commandsNum 
+> 
+struct EventFlags_t{
+    T  &pEventGroup  ;
+    const etl::array< MemberType T::* , commandsNum> memberMap; 
 
-template < StaticFactoryEngine Engine , SensorType Sensor> 
+
+    EventFlags_t( T & eventGroup, etl::array< MemberType T::* , commandsNum> mm ): pEventGroup( eventGroup ) , memberMap( mm ) {}
+    
+    etl::optional< MemberType > operator[](uint32_t idx);
+};
+
+template < 
+    StaticFactoryEngine slideEngine , 
+    StaticFactoryEngine disksEngine , 
+    StaticFactorySensor colorSensor, 
+    StaticFactorySensor slideSensor, 
+    class eventGroupType , 
+    class memberType , 
+    uint16_t commandsNum
+> 
 class Sorter{
 
 private:
-    Engine &slideEngine;
-    Engine &disksEngine;
+    slideEngine &slideEngine;
+    disksEngine &disksEngine;
 
-    ISensor &colorSensor ; 
-    ISensor &slidePositionSensor;
-    EventGroupHandle_t eventGroup ; 
+    colorSensor &colorSensor ; 
+    slideSensor &slidePositionSensor;
+    
+    EventFlags_t < eventGroupType , memberType , commandsNum > &eventGroup ; 
 
     sorterStatus status{ sorterStatus::OK }    ; 
     sorterStatus homingSlide();
@@ -122,7 +145,7 @@ private:
 
 public:
     Sorter() = delete ;
-    Sorter(EventGroupHandle_t &eventGroup,  IEngine &slideEngine , IEngine &disksEngine , ISensor &colorSensor  , ISensor &slidePositionSensor) ;
+    Sorter(EventFlags_t< eventGroupType , memberType , commandsNum >  &eventGroup,  Engine &slideEngine , Engine &disksEngine , Sensor &colorSensor  , Sensor &slidePositionSensor) ;
 
     static void startSorting(void *pvParameter) ;
 

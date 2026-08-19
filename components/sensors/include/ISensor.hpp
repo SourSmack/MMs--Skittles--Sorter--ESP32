@@ -1,5 +1,6 @@
 #pragma once
-
+#include <concepts> 
+#include "etl/optional.h"
 
 class ISensor 
 {
@@ -18,4 +19,15 @@ public:
 
 };
 
+
+
+template < 
+    class T ,
+    class ... Args
+> 
+concept StaticFactorySensor  = 
+    std::derived_from<T , ISensor>&& 
+    requires(Args&& ... args){
+    { T::create( std::forward< Args >( args) ... )} -> std::same_as< etl::optional< T >> ; 
+};
 

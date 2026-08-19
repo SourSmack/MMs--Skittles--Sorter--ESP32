@@ -1,10 +1,11 @@
 
+#pragma once
 #include "Nema.hpp"
 
 
 
 
-etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
+etl::optional< genericNema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
 {
     Nema tmp{ stepPin, dirPin} ; 
 
@@ -18,6 +19,7 @@ etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &pl
 Nema:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
 
 int Nema::init(IPlanner &planner ,FastAccelStepperEngine &engine   ){
+
 
     stepper = engine.stepperConnectToPin( stepPin , DRIVER_I2S_DIRECT);
     if ( !stepper ) return ESP_FAIL  ; 

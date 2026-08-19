@@ -1,4 +1,6 @@
+#pragma once
 #include <cstdint>
+#include "ScurvePlanner.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "IEngine.hpp"
@@ -6,7 +8,7 @@
 #include "FastAccelStepperEngine.h"
 #include "etl/optional.h"
 #include "cstdint"
-#include "TaskWrapper.hpp"
+#include "FreeRtosWrapper.hpp"
 
 struct message_t{
     uint8_t dataRelayStart : 1 { 0 } ;
@@ -16,8 +18,10 @@ struct message_t{
     uint8_t plannersQueueFull : 1  { 0 }  ; 
     
 };
-
-template< StaticFactoryPlanner Planner > 
+template< 
+    StaticFactoryPlanner Planner , 
+    StaticFactoryTaskWrapper< void (*)(void*), void*, uint32_t, uint32_t >  TaskWrapper
+> 
 class Nema : public IEngine 
 {
 private:
@@ -34,7 +38,7 @@ private:
     Planner  *scurve { nullptr }  ; 
     FastAccelStepper *stepper { nullptr } ;
 
-    ITaskWrapper *dataRelayTaskHandle { nullptr };  
+    TaskWrapper *dataRelayTaskHandle { nullptr };  
 
     int init(IPlanner &planner ,FastAccelStepperEngine &engine   );
 
@@ -63,3 +67,9 @@ public:
  
 
 };
+
+
+using genericNema  = Nema< ScurvePlanner , FreeRtosWrapper> ; 
+
+
+#include "Nema-impl.hpp"

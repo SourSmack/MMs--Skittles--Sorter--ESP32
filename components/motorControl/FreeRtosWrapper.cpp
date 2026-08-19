@@ -3,12 +3,13 @@
 
 
 
-etl::optional< ITaskWrapper* > FreeRtosWrapper::create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
+etl::optional< FreeRtosWrapper > FreeRtosWrapper::create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
 
-    xTaskCreate(task , "task" , stackSize , arg , priority , &taskHandle );
+//    xTaskCreate(task , "task" , stackSize , arg , priority , &taskHandle );
+    return etl::nullopt;
 }
 bool FreeRtosWrapper::kill()   {
-
+    return true ;
 }
 void FreeRtosWrapper::notify( uint8_t message ){
 

@@ -4,10 +4,6 @@
 #include "moveStructures.hpp"
 #include "etl/optional.h"
 
-template< typename T > 
-concept     StaticFactoryPlanner = requires( ){
-    { T::create() } -> std::same_as< etl::optional< T >> ; 
-};
 
 class IPlanner 
 {
@@ -18,4 +14,17 @@ public:
     virtual void calculateFrequency(const moveBlock_t &move ) = 0 ;
 
 
+};
+
+
+
+
+template< 
+    class T , 
+    class ... Args 
+> 
+concept StaticFactoryPlanner = 
+    std::derived_from<T , IPlanner> && 
+    requires(Args&& ... args ){
+    {  T::create( std::forward< Args >( args) ... ) } -> std::same_as< etl::optional< T >> ; 
 };
