@@ -101,11 +101,12 @@ enum class sorterStatus{
 };
 
 
+template < StaticFactoryEngine Engine , SensorType Sensor> 
 class Sorter{
 
 private:
-    IEngine &slideEngine;
-    IEngine &disksEngine;
+    Engine &slideEngine;
+    Engine &disksEngine;
 
     ISensor &colorSensor ; 
     ISensor &slidePositionSensor;

@@ -1,7 +1,13 @@
 #pragma once
 
-
+#include <concepts>
 #include "moveStructures.hpp"
+#include "etl/optional.h"
+
+template< typename T > 
+concept     StaticFactoryPlanner = requires( ){
+    { T::create() } -> std::same_as< etl::optional< T >> ; 
+};
 
 class IPlanner 
 {

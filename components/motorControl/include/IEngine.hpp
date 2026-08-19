@@ -1,8 +1,15 @@
 
 #pragma once
 #include "moveStructures.hpp"
+#include <concepts>
 
+class IPlanner;
+class FastAccelStepperEngine ;
 
+template< class   T > 
+concept StaticFactoryEngine = requires(  int8_t stepPin , int8_t dirPin , IPlanner &planner ,FastAccelStepperEngine &engine    ){
+    { T::create(stepPin, dirPin, planner, engine) } -> std::same_as< etl::optional< T >> ; 
+};
 
 
 class IEngine 

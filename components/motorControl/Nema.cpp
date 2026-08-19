@@ -4,13 +4,14 @@
 
 
 
-etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , IPlanner &planner ,FastAccelStepperEngine &engine    )
+etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
 {
     Nema tmp{ stepPin, dirPin} ; 
 
     if ( tmp.init( planner , engine) != ESP_OK )
         return etl::nullopt ; 
-    if ( xTaskCreate( dataRelayTask ,"dataRelayTask" , 1024 , &tmp , 4 , &tmp.dataRelayTaskHandle ) != pdPASS ) return etl::nullopt; 
+    // TODO: change this to my new taskWrapper api 
+    if ( xTaskCreate( dataRelayTask ,"dataRelayTask" , 1024 , &tmp , 4 , tmp.dataRelayTaskHandle ) != pdPASS ) return etl::nullopt; 
     return tmp ; 
 }
 

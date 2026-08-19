@@ -4,7 +4,6 @@
 #include "IEngine.hpp"
 #include "IPlanner.hpp"
 #include "FastAccelStepperEngine.h"
-#include "etl/circular_buffer.h"
 #include "etl/optional.h"
 #include "cstdint"
 #include "TaskWrapper.hpp"
@@ -18,7 +17,7 @@ struct message_t{
     
 };
 
-
+template< StaticFactoryPlanner Planner > 
 class Nema : public IEngine 
 {
 private:
@@ -32,10 +31,10 @@ private:
     int8_t dirPin{ 0 } ;
 
 
-    IPlanner  *scurve { nullptr }  ; 
+    Planner  *scurve { nullptr }  ; 
     FastAccelStepper *stepper { nullptr } ;
 
-    TaskWrapper *dataRelayTaskHandle { nullptr };  
+    ITaskWrapper *dataRelayTaskHandle { nullptr };  
 
     int init(IPlanner &planner ,FastAccelStepperEngine &engine   );
 
@@ -44,9 +43,8 @@ private:
     static void dataRelayTask(void * arg);
 public:
     Nema() = delete ;
-    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , IPlanner &planner ,FastAccelStepperEngine &engine    );
-    
-    
+
+    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    );
 
     bool isRunning(const uint8_t engineNum)const override ;
     long position(const uint8_t engineNum)  override ;
