@@ -13,6 +13,7 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
+    "-j=2",
     "--compile-commands-dir=/home/sourish/cameraCaptchure/esp/generic_gpio/build"
   ],
   "C_Cpp.errorSquiggles": "disabled"

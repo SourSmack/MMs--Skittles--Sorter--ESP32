@@ -17,9 +17,6 @@ void FreeRtosWrapper::notify( uint8_t message ){
     
 
 
-namespace thisTask { 
-    bool notifyWait( uint8_t message , uint32_t delay ){
 
-        return true;
-    }
+bool FreeRtosWrapper::notifyWait( uint8_t message , uint32_t delay ){
 }

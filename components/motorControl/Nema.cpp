@@ -5,8 +5,8 @@
 
 
 
-NEMA_TEMPLATE
-etl::optional< NEMA_CLASS > NEMA_CLASS::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
+
+etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine    )
 {
     Nema tmp{ stepPin, dirPin} ; 
 
@@ -17,11 +17,11 @@ etl::optional< NEMA_CLASS > NEMA_CLASS::create( int8_t stepPin , int8_t dirPin ,
     return tmp ; 
 }
 
-NEMA_TEMPLATE
-NEMA_CLASS:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
 
-NEMA_TEMPLATE
-int NEMA_CLASS::init(IPlanner &planner ,FastAccelStepperEngine &engine   ){
+Nema:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
+
+
+int Nema::init(IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine   ){
 
 
     stepper = engine.stepperConnectToPin( stepPin , DRIVER_I2S_DIRECT);
@@ -38,9 +38,9 @@ bool thisTask::notifyWait( uint8_t message , uint32_t delay ){
     return taskBits & ~message ; 
 }  
 // TODO on notify to end job it'll produce one more motion , and probably shouldnt 
-NEMA_TEMPLATE
-void NEMA_CLASS::dataRelayTask(void * arg){
-    auto instance { *static_cast< NEMA_CLASS*>( arg ) } ;
+
+void Nema::dataRelayTask(void * arg){
+    auto instance { *static_cast< Nema*>( arg ) } ;
     auto& scurve = instance.scurve ; 
     auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = instance.message ;  
     
@@ -74,25 +74,30 @@ void NEMA_CLASS::dataRelayTask(void * arg){
 
 }
 
-bool Nema::isRunning(const uint8_t engineNum)const  
+
+bool Nema::isRunning()const  
 {
 
     return true ;
 }
-long Nema::position(const uint8_t engineNum)  
+
+long Nema::position()  
 {
 
     return 1  ;
 }
 
+
 void Nema::move( const moveBlock_t &move  ,const  moveInfo_t flags = {}, const int wait = 0 ) 
 {
 
 }
+
 void Nema::moveTo( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait = 0 )  
 {
     
 }
+
 
 
 
@@ -120,20 +125,24 @@ void Nema::moveToCup( const moveBlock_t &move , const moveInfo_t flags = {} , co
 
 }
 
+
 void Nema::update(const uint32_t blocksToUpdate )  
 {
 
 }
+
 
 void Nema::flush(const uint32_t motionsToFlush  ) 
 {
 
 }
 
+
 void Nema::stop(const bool flush  = false  , const bool instantly    = false)  
 {
 
 }
+
 void Nema::start(void) 
 {
 

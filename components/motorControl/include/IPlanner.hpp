@@ -1,30 +1,23 @@
 #pragma once
-
-#include <concepts>
 #include "moveStructures.hpp"
 #include "etl/optional.h"
 
+#define IPlannerDeriv  static_cast< T& >( * this) 
 
+template< class T>
 class IPlanner 
 {
-private:
+protected:
+    IPlanner(){}
 public:
-    virtual ~IPlanner(void) = default ;
+    ~IPlanner(){}  ;
     // whole function should be atomic to prevent inconsistency in moves turn
-    virtual void calculateFrequency(const moveBlock_t &move ) = 0 ;
-
+    void calculateFrequency(const moveBlock_t &move )  {
+        IPlannerDeriv.calculateFrequency( move ) ;
+    }
+    consteval static etl::optional<T> create( ){  return T::create( ) ; }
+    
 
 };
 
-
-
-
-template< 
-    class T , 
-    class ... Args 
-> 
-concept StaticFactoryPlanner = 
-    std::derived_from<T , IPlanner> && 
-    requires(Args&& ... args ){
-    {  T::create( std::forward< Args >( args) ... ) } -> std::same_as< etl::optional< T >> ; 
-};
+#undef IPlannerDeriv

@@ -10,7 +10,7 @@
 #include <etl/optional.h>
 
 
-class ScurvePlanner : public IPlanner
+class ScurvePlanner : public IPlanner< ScurvePlanner >
 {
 private:
     static constexpr int MAXBUFFOR { 64 };
@@ -26,7 +26,7 @@ private:
 public:
     
     static etl::optional< ScurvePlanner >  create();
-    void calculateFrequency(const moveBlock_t &move) override  ; 
+    void calculateFrequency(const moveBlock_t &move)   ; 
     void stop();
     void start();
     void enqueue();

@@ -20,14 +20,7 @@ struct message_t{
 };
 
 
-#define NEMA_TEMPLATE template <StaticFactoryPlanner Planner, StaticFactoryTaskWrapper<void (*)(void*), void*, uint32_t, uint32_t> TaskWrapper>
-#define NEMA_CLASS Nema<Planner, TaskWrapper>
-
-template< 
-    StaticFactoryPlanner Planner , 
-    StaticFactoryTaskWrapper< void (*)(void*), void*, uint32_t, uint32_t >  TaskWrapper
-> 
-class Nema : public IEngine 
+class Nema : public IEngine< Nema >
 {
 private:
 
@@ -40,40 +33,38 @@ private:
     int8_t dirPin{ 0 } ;
 
 
-    Planner  *scurve { nullptr }  ; 
-    FastAccelStepper *stepper { nullptr } ;
+    IPlanner<PlannerType>  *scurve { nullptr }  ; 
+    IStepper<StepperType> *stepper { nullptr } ;
 
-    TaskWrapper *dataRelayTaskHandle { nullptr };  
+    ITaskWrapper<TaskType> *dataRelayTaskHandle { nullptr };  
 
-    int init(IPlanner &planner ,FastAccelStepperEngine &engine   );
+    int init(IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine   );
 
     Nema(int8_t stepPin , int8_t dirPin);
 
     static void dataRelayTask(void * arg);
+    Nema(){}
 public:
-    Nema() = delete ;
-
-    static etl::optional< NEMA_CLASS > create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    );
-
-    bool isRunning(const uint8_t engineNum)const override ;
-    long position(const uint8_t engineNum)  override ;
 
 
-    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  ) override ;
-    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   ) override ;
-    void moveToCup( const moveBlock_t &move , const moveInfo_t flags , const int wait   ) override ;
+    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine    );
 
-    void update(const uint32_t blocksToUpdate = ALL) override ;
+    bool isRunning(const uint8_t engineNum)const  ;
+    long position(const uint8_t engineNum)   ;
 
-    void flush(const uint32_t motionsToFlush = ALL) override ;
 
-    void stop(const bool flush  , const bool instantly   ) override ;
-    void start(void) override ;
+    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  ;
+    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  ;
+    void moveToCup( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  ;
+
+    void update(const uint32_t blocksToUpdate = ALL)  ;
+
+    void flush(const uint32_t motionsToFlush = ALL)  ;
+
+    void stop(const bool flush  , const bool instantly   )  ;
+    void start(void)  ;
  
 
 };
 
 
-using genericNemaSpecialization = Nema<ScurvePlanner, FreeRtosWrapper> ; 
-
-#include "Nema-impl.hpp"

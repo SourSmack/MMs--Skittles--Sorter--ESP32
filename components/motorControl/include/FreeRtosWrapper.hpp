@@ -4,13 +4,17 @@
 #include "ITaskWrapper.hpp"
 
 
-class FreeRtosWrapper : public ITaskWrapper{
+class FreeRtosWrapper : public ITaskWrapper<FreeRtosWrapper>{
 private:
     TaskHandle_t task{};
 public:
+    bool kill()   ;
+    void notify( uint8_t message )   ;
+        
+        
+
     static etl::optional< FreeRtosWrapper > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
-    bool kill() override  ;
-    void notify( uint8_t message ) override  ;
-    
+    static bool notifyWait( uint8_t message , uint32_t delay );
+
 
 };
