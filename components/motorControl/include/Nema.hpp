@@ -18,6 +18,11 @@ struct message_t{
     uint8_t plannersQueueFull : 1  { 0 }  ; 
     
 };
+
+
+#define NEMA_TEMPLATE template <StaticFactoryPlanner Planner, StaticFactoryTaskWrapper<void (*)(void*), void*, uint32_t, uint32_t> TaskWrapper>
+#define NEMA_CLASS Nema<Planner, TaskWrapper>
+
 template< 
     StaticFactoryPlanner Planner , 
     StaticFactoryTaskWrapper< void (*)(void*), void*, uint32_t, uint32_t >  TaskWrapper
@@ -48,7 +53,7 @@ private:
 public:
     Nema() = delete ;
 
-    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    );
+    static etl::optional< NEMA_CLASS > create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    );
 
     bool isRunning(const uint8_t engineNum)const override ;
     long position(const uint8_t engineNum)  override ;
@@ -69,7 +74,6 @@ public:
 };
 
 
-using genericNema  = Nema< ScurvePlanner , FreeRtosWrapper> ; 
-
+using genericNemaSpecialization = Nema<ScurvePlanner, FreeRtosWrapper> ; 
 
 #include "Nema-impl.hpp"

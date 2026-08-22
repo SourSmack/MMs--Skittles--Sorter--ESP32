@@ -1,6 +1,6 @@
 idf_component_register(
     SRCS 
-        "Nema.cpp" 
+    
         "ScurvePlanner.cpp"
     INCLUDE_DIRS 
         "include"               # Udostępnia folder include/ na zewnątrz

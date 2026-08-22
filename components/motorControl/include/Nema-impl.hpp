@@ -5,7 +5,8 @@
 
 
 
-etl::optional< genericNema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
+NEMA_TEMPLATE
+etl::optional< NEMA_CLASS > NEMA_CLASS::create( int8_t stepPin , int8_t dirPin , Planner &planner ,FastAccelStepperEngine &engine    )
 {
     Nema tmp{ stepPin, dirPin} ; 
 
@@ -16,9 +17,11 @@ etl::optional< genericNema > Nema::create( int8_t stepPin , int8_t dirPin , Plan
     return tmp ; 
 }
 
-Nema:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
+NEMA_TEMPLATE
+NEMA_CLASS:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
 
-int Nema::init(IPlanner &planner ,FastAccelStepperEngine &engine   ){
+NEMA_TEMPLATE
+int NEMA_CLASS::init(IPlanner &planner ,FastAccelStepperEngine &engine   ){
 
 
     stepper = engine.stepperConnectToPin( stepPin , DRIVER_I2S_DIRECT);
@@ -35,15 +38,16 @@ bool thisTask::notifyWait( uint8_t message , uint32_t delay ){
     return taskBits & ~message ; 
 }  
 // TODO on notify to end job it'll produce one more motion , and probably shouldnt 
-void Nema::dataRelayTask(void * arg){
-    auto instance { *static_cast< Nema*>( arg ) } ;
+NEMA_TEMPLATE
+void NEMA_CLASS::dataRelayTask(void * arg){
+    auto instance { *static_cast< NEMA_CLASS*>( arg ) } ;
     auto& scurve = instance.scurve ; 
     auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = instance.message ;  
     
     
     
 
-    while ( !notifyWait( dataRelayStart , portMAX_DELAY)){}
+    while ( !thisTask::notifyWait( dataRelayStart , portMAX_DELAY)){}
 
     bool relay { true }; 
     
