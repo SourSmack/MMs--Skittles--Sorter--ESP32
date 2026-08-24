@@ -2,7 +2,7 @@
 #pragma once
 #include "moveStructures.hpp"
 #include "etl/optional.h"
-#include "config.hpp"
+#include "CRTPconfig.hpp"
 
 #define derived static_cast<T>(*this) 
 template < class T>
@@ -10,11 +10,12 @@ class IStepper {
 private:
 
 protected:
-    consteval IStepper(){}
+    consteval IStepper() = default ;
+
 public:
 
 
-    ~IStepper() =  default ;
+
 
     void enqueue( motionBlock_t  motion) { derived.enqueue(  motion ) ; }
     

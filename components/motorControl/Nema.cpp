@@ -1,19 +1,26 @@
 
-#pragma once
+
 #include "Nema.hpp"
+#include "CRTPconfig.hpp"
 
 
 
 
 
-etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine    )
+etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , Planner &planner ,Planner &engine , etl::optional<Task> &taskSpace  )
 {
     Nema tmp{ stepPin, dirPin} ; 
 
-    if ( tmp.init( planner , engine) != ESP_OK )
+    taskSpace = ITask<TaskType>::createTask( dataRelayTask, &tmp , 2048 , 4);
+    if ( taskSpace == etl::nullopt) return etl::nullopt ; 
+
+
+
+    if ( tmp.init( planner , engine, *taskSpace) != ESP_OK )
         return etl::nullopt ; 
-    // TODO: change this to my new taskWrapper api 
-    if ( xTaskCreate( dataRelayTask ,"dataRelayTask" , 1024 , &tmp , 4 , tmp.dataRelayTaskHandle ) != pdPASS ) return etl::nullopt; 
+        
+        
+    
     return tmp ; 
 }
 
@@ -21,22 +28,16 @@ etl::optional< Nema > Nema::create( int8_t stepPin , int8_t dirPin , IPlanner<Pl
 Nema:: Nema( int8_t stepPin , int8_t dirPin ): stepPin(stepPin) , dirPin( dirPin )    {} 
 
 
-int Nema::init(IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine   ){
+int Nema::init( Planner &planner ,Stepper &engine   , Task &taskSpace){
 
-
-    stepper = engine.stepperConnectToPin( stepPin , DRIVER_I2S_DIRECT);
-    if ( !stepper ) return ESP_FAIL  ; 
+    stepper = &engine ;
     scurve = &planner ;
-
+    
+    dataRelayTaskHandle = &taskSpace ;
 
     return ESP_OK ;
 } 
 
-bool thisTask::notifyWait( uint8_t message , uint32_t delay ){
-    uint32_t taskBits{0};
-    xTaskNotifyWait(0x00 , message , &taskBits , delay) ; 
-    return taskBits & ~message ; 
-}  
 // TODO on notify to end job it'll produce one more motion , and probably shouldnt 
 
 void Nema::dataRelayTask(void * arg){
@@ -47,7 +48,7 @@ void Nema::dataRelayTask(void * arg){
     
     
 
-    while ( !thisTask::notifyWait( dataRelayStart , portMAX_DELAY)){}
+    while ( !dataRelayTaskHandle->notifyWait( dataRelayStart , portMAX_DELAY)){}
 
     bool relay { true }; 
     
@@ -75,6 +76,28 @@ void Nema::dataRelayTask(void * arg){
 }
 
 
+
+
+
+void Nema::moveToCup( const moveBlock_t &move , const moveInfo_t flags = {} , const int wait  = 0  )  
+{
+    // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
+    // moveToCup  just manages whether instantly make moveo or enqu in normal manner
+    // manages que position motionBlock_t
+    if  ( !flags.enqueue ){
+        scurve.stop() ; // should not use vTaskSuspend , 
+        while ( auto motion  = scurve->calculateFrequency( move ) ){
+            stepper->addQueueEntry( motion ) ; 
+        }
+        scurve.start();
+    }
+    else{
+
+        scurve.enqueue( move ) ;
+    }
+}
+
+
 bool Nema::isRunning()const  
 {
 
@@ -97,59 +120,3 @@ void Nema::moveTo( const moveBlock_t &move , const moveInfo_t flags = {}, const 
 {
     
 }
-
-
-
-
-void Nema::moveToCup( const moveBlock_t &move , const moveInfo_t flags = {} , const int wait  = 0  )  
-{
-    // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
-    // moveToCup  just manages whether instantly make moveo or enqu in normal manner
-    // manages que position motionBlock_t
-    if  ( !flags.enqueue ){
-        scurve.stop() ; // should not use vTaskSuspend , 
-        while ( auto motion  = scurve->calculateFrequency( move ) ){
-            stepper->addQueueEntry( motion ) ; 
-        }
-        scurve.start();
-    }
-    else{
-
-        scurve.enqueue( move ) ;
-    }
-
-
-
-
-
-
-}
-
-
-void Nema::update(const uint32_t blocksToUpdate )  
-{
-
-}
-
-
-void Nema::flush(const uint32_t motionsToFlush  ) 
-{
-
-}
-
-
-void Nema::stop(const bool flush  = false  , const bool instantly    = false)  
-{
-
-}
-
-void Nema::start(void) 
-{
-
-}
-
-
-
-
-
-

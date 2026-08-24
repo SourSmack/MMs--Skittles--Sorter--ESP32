@@ -17,6 +17,8 @@ void FreeRtosWrapper::notify( uint8_t message ){
     
 
 
-
 bool FreeRtosWrapper::notifyWait( uint8_t message , uint32_t delay ){
-}
+    uint32_t taskBits{0};
+    xTaskNotifyWait(0x00 , message , &taskBits , delay) ; 
+    return taskBits & ~message ; 
+}  

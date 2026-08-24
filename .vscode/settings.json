@@ -16,5 +16,5 @@
     "-j=2",
     "--compile-commands-dir=/home/sourish/cameraCaptchure/esp/generic_gpio/build"
   ],
-  "C_Cpp.errorSquiggles": "disabled"
+  "C_Cpp.errorSquiggles": "enabled"
 }

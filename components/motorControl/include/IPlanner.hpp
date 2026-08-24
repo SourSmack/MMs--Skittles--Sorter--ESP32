@@ -10,7 +10,7 @@ class IPlanner
 protected:
     IPlanner(){}
 public:
-    ~IPlanner(){}  ;
+    ~IPlanner() = default   ;
     // whole function should be atomic to prevent inconsistency in moves turn
     void calculateFrequency(const moveBlock_t &move )  {
         IPlannerDeriv.calculateFrequency( move ) ;

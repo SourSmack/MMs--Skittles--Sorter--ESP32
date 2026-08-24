@@ -1,9 +1,10 @@
 #pragma once
 #include <cstdint>
+#include "CRTPconfig.hpp"
 #include "ScurvePlanner.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "IEngine.hpp"
+
 #include "IPlanner.hpp"
 #include "FastAccelStepperEngine.h"
 #include "etl/optional.h"
@@ -20,7 +21,8 @@ struct message_t{
 };
 
 
-class Nema : public IEngine< Nema >
+template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 
+class Nema  
 {
 private:
 
@@ -33,21 +35,43 @@ private:
     int8_t dirPin{ 0 } ;
 
 
-    IPlanner<PlannerType>  *scurve { nullptr }  ; 
-    IStepper<StepperType> *stepper { nullptr } ;
+    Planner  *scurve { nullptr }  ; 
+    Stepper *stepper { nullptr } ;
 
-    ITaskWrapper<TaskType> *dataRelayTaskHandle { nullptr };  
+    Task *dataRelayTaskHandle { nullptr };  
 
-    int init(IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine   );
+    int init(Planner &planner ,Stepper &engine   , Task &taskSpace){
+        stepper = &engine ;
+        scurve = &planner ;
+        
+        dataRelayTaskHandle = &taskSpace ;
 
-    Nema(int8_t stepPin , int8_t dirPin);
+        return ESP_OK ;
+    }
+
+    Nema(int8_t stepPin , int8_t dirPin): stepPin(stepPin) , dirPin( dirPin ){} 
 
     static void dataRelayTask(void * arg);
-    Nema(){}
+
+    Nema() = default ;
+
+    static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n")
 public:
 
 
-    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , IPlanner<PlannerType> &planner ,IStepper<StepperType> &engine    );
+    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
+        Nema tmp{ stepPin, dirPin} ; 
+
+        taskSpace = ITask<TaskType>::createTask( dataRelayTask, &tmp , 2048 , 4);
+        if ( taskSpace == etl::nullopt) return etl::nullopt ; 
+
+
+
+        if ( tmp.init( planner , engine, *taskSpace) != ESP_OK )
+            return etl::nullopt ; 
+        
+        return tmp ; 
+    }
 
     bool isRunning(const uint8_t engineNum)const  ;
     long position(const uint8_t engineNum)   ;
@@ -66,5 +90,6 @@ public:
  
 
 };
+
 
 
