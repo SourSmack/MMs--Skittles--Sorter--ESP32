@@ -56,20 +56,23 @@ concept TaskConcept =
                     requires( 
                                 T Task , const T ConstTask ,
                                 void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
+                                uint32_t ms , 
                                 uint8_t message ,           
                                 uint32_t delay   
                                                 ){
 
     { T::createTask(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
+    requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
 
     { Task.notify(  message )  }            -> std::same_as< void > ;
-    { T::notifyWait(  message ,  delay ) }  -> std::same_as< bool > ;
-
     { Task.requestStop() }   -> std::same_as< bool > ;
     { Task.join() }          -> std::same_as< bool > ; 
-    { T::stopRequested() }   -> std::same_as< bool > ;
 
-    requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
+
+    { T::notifyWait(  message ,  delay ) }  -> std::same_as< bool > ;
+    { T::stopRequested() }   -> std::same_as< bool > ;
+    { T::waitMS( ms )} -> std::same_as<void> ;
+
 };
 
 template< class T > 
@@ -90,11 +93,11 @@ class Nema;
 
 class ScurvePlanner;
 class FastAccelWrapper;
-class FreeRtosWrapper;
+class Task;
 
 
 using EngineType  = Nema;
 using PlannerType = ScurvePlanner;
 using StepperType = FastAccelWrapper;
-using TaskType    = FreeRtosWrapper;
+using TaskType    = Task;
 */

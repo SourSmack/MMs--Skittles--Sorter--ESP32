@@ -10,12 +10,12 @@
 #include "Sorter.hpp"
 #include "FreeRtosWrapper.hpp"
 
-class FreeRtosWrapper;
+class Task;
 
 struct HardwareContext 
 {
     etl::optional< EventGroupIsrTransoptor >  slideSensor ;
-    etl::optional< Nema< ScurvePlanner , FreeRtosWrapper >>  slideEngine ; 
+    etl::optional< Nema< ScurvePlanner , Task >>  slideEngine ; 
     FastAccelStepperEngine fastSlideEngine; 
 
     etl::optional < Camera > disksSensor ;
@@ -29,8 +29,8 @@ struct HardwareContext
 
 
 using genericSorter = Sorter< 
-                        Nema< ScurvePlanner , FreeRtosWrapper > ,
-                        Nema< ScurvePlanner , FreeRtosWrapper > , 
+                        Nema< ScurvePlanner , Task > ,
+                        Nema< ScurvePlanner , Task > , 
                         Camera , 
                         EventGroupIsrTransoptor  , 
                         EventGroupHandle_t , 

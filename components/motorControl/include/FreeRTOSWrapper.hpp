@@ -1,22 +1,25 @@
 #pragma once
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "ITask.hpp"
 
 
-class FreeRtosWrapper : public ITask<FreeRtosWrapper>{
+
+class Task {
 private:
     TaskHandle_t task;
+    etl::atomic< bool > taskRunning { false } ;
+
+    ~Task(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
 public:
 
         
         
 
-    static etl::optional< FreeRtosWrapper > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
+    static etl::optional< Task > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
     static bool notifyWait( uint8_t message , uint32_t delay );
     void notify( uint8_t message )   ;
 
-
+    static void waitMs( uint32_t ms ) ;
     bool requestStop()  ;
     bool join();
     static bool stopRequested();

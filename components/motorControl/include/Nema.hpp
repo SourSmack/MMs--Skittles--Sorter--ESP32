@@ -51,7 +51,40 @@ private:
 
     Nema(int8_t stepPin , int8_t dirPin): stepPin(stepPin) , dirPin( dirPin ){} 
 
-    static void dataRelayTask(void * arg);
+    static void dataRelayTask(void * arg){
+        auto instance { *static_cast< Nema*>( arg ) } ;
+        auto& scurve = instance.scurve ; 
+        auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = instance.message ;  
+        
+        
+        
+
+        while ( !dataRelayTaskHandle->notifyWait( dataRelayStart , portMAX_DELAY)){}
+
+        bool relay { true }; 
+        
+        while ( relay ){
+            relay = notifyWait( dataRelayLoopON , 0) ;
+            
+
+
+            auto queueFull =  notifyWait( plannersQueueFull , 0 ) ;
+
+            if ( queueFull ){
+                motionBlock_t motion{} ;
+                for (auto i{0} ; i < Nema::maxBuffor ; ++i){
+                    xQueueReceive( scurve->motionsQ , &motion,  pdMS_TO_TICKS( 10 ) ) ;
+                    stepper->addQueueEntity( motion ) ;
+                }
+
+            }
+
+
+
+        }
+        vTaskDelete(nullptr);
+    
+    }
 
     Nema() = default ;
 
@@ -79,7 +112,23 @@ public:
 
     void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  ;
     void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  ;
-    void moveToCup( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  ;
+    void moveToCup( const moveBlock_t &move , const moveInfo_t flags , const int wait   ){
+        // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
+        // moveToCup  just manages whether instantly make moveo or enqu in normal manner
+        // manages que position motionBlock_t
+        if  ( !flags.enqueue ){
+            scurve.stop() ; // should not use vTaskSuspend , 
+            while ( auto motion  = scurve->calculateFrequency( move ) ){
+                stepper->addQueueEntry( motion ) ; 
+            }
+            scurve.start();
+        }
+        else{
+
+            scurve.enqueue( move ) ;
+        }
+    }
+
 
     void update(const uint32_t blocksToUpdate = ALL)  ;
 
