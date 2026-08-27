@@ -10,7 +10,7 @@
 #include <etl/optional.h>
 
 
-class ScurvePlanner : public IPlanner< ScurvePlanner >
+class ScurvePlanner 
 {
 private:
     static constexpr int MAXBUFFOR { 64 };
@@ -20,14 +20,15 @@ private:
     static void scurveTask(void * arg);
     TaskHandle_t scurveTaskHandle {nullptr};
 
-    ScurvePlanner();
+    ScurvePlanner() = default ;
 
     
 public:
     
     static etl::optional< ScurvePlanner >  create();
-    void calculateFrequency(const moveBlock_t &move)   ; 
+    motionBlock_t calculateFrequency(const moveBlock_t &move)   ; 
     void stop();
     void start();
-    void enqueue();
+    void enqueue( const motionBlock_t motion);
+    motionBlock_t recieve();
 };

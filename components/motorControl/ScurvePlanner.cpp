@@ -23,3 +23,10 @@ void ScurvePlanner::calculateFrequency(const moveBlock_t &move)
 
 
 } 
+
+
+motionBlock_t recieve(){
+    motionBlock_t motion ;
+    xQueueReceive( motionsQ , &motion,  pdMS_TO_TICKS( 10 ) ) ;
+    return motion ;
+};

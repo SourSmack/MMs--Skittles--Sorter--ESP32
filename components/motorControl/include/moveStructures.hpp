@@ -5,7 +5,7 @@
 struct motionBlock_t
 {
     uint32_t ticks ;
-    uint8_t steps ;
+    uint32_t steps ;
     bool dir : 1 ;
 
 };

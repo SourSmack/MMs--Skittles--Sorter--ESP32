@@ -16,11 +16,13 @@ public:
         
 
     static etl::optional< Task > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
-    static bool notifyWait( uint8_t message , uint32_t delay );
-    void notify( uint8_t message )   ;
 
-    static void waitMs( uint32_t ms ) ;
+    void notify( uint8_t message )   ;
     bool requestStop()  ;
     bool join();
+
     static bool stopRequested();
+    static bool notifyWait( uint8_t message , uint32_t delay );
+    static void waitMs( uint32_t ms ) ;
+
 };

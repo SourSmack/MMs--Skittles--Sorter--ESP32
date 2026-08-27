@@ -2,7 +2,7 @@
 #pragma once
 #include "moveStructures.hpp"
 #include <concepts>
-#include "etl/optional.h"
+#include "../../includes/etl/include/etl/optional.h"
 
 
 
@@ -36,6 +36,11 @@ concept PlannerConcept = requires( T Planner , T ConstPlanner ,
     { Planner.calculateFrequency( move )} -> std::same_as< motionBlock_t > ; 
     { T::create() } -> std::same_as< etl::optional< T>> ; 
 
+    { Planner.recieve() }       -> std::same_as< motionBlock_t > ;
+    { Planner.stop() }          -> std::same_as< void > ;
+    { Planner.start() }         -> std::same_as< void > ;
+    { Planner.enqueue( move ) } -> std::same_as< void > ;
+    
 };
 
 template< class T > 
@@ -62,7 +67,7 @@ concept TaskConcept =
                                                 ){
 
     { T::createTask(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
-    requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
+    //requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
 
     { Task.notify(  message )  }            -> std::same_as< void > ;
     { Task.requestStop() }   -> std::same_as< bool > ;

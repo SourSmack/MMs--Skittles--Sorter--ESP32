@@ -1,4 +1,4 @@
-#include "../include/Nema.hpp"
+#include "../components/motorControl/include/Nema.hpp"
 #include "etl/optional.h"
 #include <thread>
 #include <chrono>
@@ -9,36 +9,53 @@ class MOCKplanner{
 public:
     
     static etl::optional< MOCKplanner >  create(){  MOCKplanner tmp{} ; return tmp ; }
-    motionBlock_t calculateFrequency(const moveBlock_t &move)   ; 
-    void stop(){}
-    void start(){}
-    void enqueue( const moveBlock_t &move ){ }
-    motionBlock_t recieve(){ static uint32_t a { 0 } ; static uint32_t b { 0 } ; return motionBlock_t{ ++a , ++b , LEFT } ;}
+    motionBlock_t calculateFrequency(const moveBlock_t &move)   { 
+        static uint32_t count { 0 } ;
+        if ( count == 10 ) return  motionBlock_t{ 0 , 0, 0 } ;
+        count++ ;
+        
+
+        std::cout << "Planner: calculateFrequency() \n" ; 
+        
+        return motionBlock_t{ ( 10u + count )   , ( 10u+ ( count * count))  ,1 } ;
+    } 
+    void stop(){ std::cout << " Planner: stop() \n "; }
+    void start(){ std::cout << "Planner: start() \n"; }
+    void enqueue( const moveBlock_t &move ){ std::cout << "Planner: enqueue() \n";}
+    motionBlock_t recieve(){ 
+        std::cout << "Planner : recieve() \n";
+        static uint32_t a { 0 } ; 
+        static uint32_t b { 0 } ; 
+        auto tmp  { motionBlock_t{ ++a , ++b , LEFT }} ;
+        return tmp ;
+    }
 
 };
 
 class MOCKstepper {
+    MOCKstepper() = default ;
 public:
     static  etl::optional< MOCKstepper >  create( uint16_t step , uint16_t dir ){  MOCKstepper tmp{}; return tmp;}
 
     void enqueue( motionBlock_t  motion){  std::cout << "STEPPER: Enqueueing motion \n Engine is running in background ... \n"; }  
     
-    void stop(bool instant = false  ) { } 
-    void start(){ } 
-    
+    void stop(bool instant = false  ) { std::cout << "Stepper: stop() \n" ;} 
+    void start(){ std::cout << "Stepper : start() \n" ; } 
 
 
 };
 
+
 class MOCKtask{
-private: 
-    static bool stop  ;
-    static bool running  ;
-    static uint8_t mess;
+public:
+    inline static bool stop  { false };
+    inline static bool running { false } ;
+    inline static uint8_t mess { 0 } ;
     void (*taskFunc)( void*arg ) { nullptr };
     void * arg { nullptr } ;
-public:
-    static etl::optional< MOCKtask > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority ){  
+    
+
+    static  etl::optional< MOCKtask > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority ){  
         MOCKtask tmp{} ;
 
         tmp.taskFunc = task ;
@@ -47,28 +64,18 @@ public:
     }
 
     void notify( uint8_t message ){  mess = message ; }
-    bool requestStop()  { stop = false ;}
-    bool join(){  while ( running){} ; }
+    bool requestStop()  { auto count { 0 }  ; count++ ;  if ( count >= 10 ) return true; stop = false ;}
+    bool join(){  while ( running){} ; return true;  }
 
     static bool stopRequested(){ return stop ; }
     static bool notifyWait( uint8_t message , uint32_t delay ){  
-        auto result{ false } ;
-        auto start{ std::chrono::high_resolution_clock::now() }; 
-        auto delayChrono{ std::chrono::milliseconds( delay ) } ;
-        auto now = start ; 
-        while ( ( now  - start ) < delayChrono  ){
-            if ( mess == message)  result = true  ; 
-            now  = std::chrono::high_resolution_clock::now() ;
-        }
-        return result ; 
+        std::cout << "MOCKtask : notifyWait()  " << message << std::endl ;
+        return true ;
     } 
-    static void waitMs( uint32_t ms ){  std::this_thread::sleep_for( std::chrono::milliseconds( ms ) ); } ;
+    static void waitMS( uint32_t ms ){  std::this_thread::sleep_for( std::chrono::milliseconds( ms ) ); } ;
 
     void _playTask(){  taskFunc( arg ) ;}
 };
-bool MOCKtask::stop { false } ;
-bool MOCKtask::running { false } ;
-uint8_t MOCKtask::mess { 0 };
 
 
 int main(){
@@ -86,10 +93,17 @@ int main(){
     moveInfo_t QueInf { false , true } ;
 
     // making move directly (without queue) 
-    NemaMOCK.moveToCup( testMove , notQueInf ) ;
+    nemaEng.moveToCup( testMove1 ,  notQueInf ) ; // should do 10 times 
 
 
 
     // making move via queue ( spoofing dataRelayTask) 
+    // scenario where Planners queue is full and it is ready to be transfered via dataRelayTask ( we'll be simulationg it ) 
+
+    nemaEng.moveToCup( testMove1 , QueInf) ;
+    
+    auto task = *taskspace ;
+
+    task.taskFunc( task.arg) ;  // dataRelayTask 
 
 }

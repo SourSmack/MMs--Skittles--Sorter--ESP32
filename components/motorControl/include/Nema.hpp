@@ -1,15 +1,14 @@
 #pragma once
+
 #include <cstdint>
 #include "CRTPconfig.hpp"
-#include "ScurvePlanner.hpp"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+//#include "ScurvePlanner.hpp"
 
 #include "IPlanner.hpp"
-#include "FastAccelStepperEngine.h"
+
 #include "etl/optional.h"
 #include "cstdint"
-#include "FreeRtosWrapper.hpp"
+//#include "FreeRTOSWrapper.hpp"
 
 struct message_t{
     uint8_t dataRelayStart : 1 { 0 } ;
@@ -19,6 +18,12 @@ struct message_t{
     uint8_t plannersQueueFull : 1  { 0 }  ; 
     
 };
+auto message { message_t{} };
+
+typedef enum {
+    ERR = - 1 , 
+    OK 
+}err_code_t;
 
 
 template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 
@@ -26,7 +31,7 @@ class Nema
 {
 private:
 
-    message_t message{} ;
+
 
     static constexpr uint32_t ALL { 0u };
     static constexpr uint32_t maxBuffor { 32u } ; 
@@ -38,104 +43,102 @@ private:
     Planner  *scurve { nullptr }  ; 
     Stepper *stepper { nullptr } ;
 
-    Task *dataRelayTaskHandle { nullptr };  
+    Task *dataRelayTask { nullptr };  
+public:
+    template< class T = Nema <  Planner , Stepper , Task>> 
+    static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
+        T tmp{ stepPin, dirPin} ; 
+
+        if ( tmp.init( planner , engine, *taskSpace) != err_code_t::OK )
+            return etl::nullopt ; 
+        
+        return tmp ; 
+    }
+private:
+
+    Nema() = default ;
+
+    Nema(int8_t stepPin , int8_t dirPin): stepPin(stepPin) , dirPin( dirPin ){} 
 
     int init(Planner &planner ,Stepper &engine   , Task &taskSpace){
         stepper = &engine ;
         scurve = &planner ;
         
-        dataRelayTaskHandle = &taskSpace ;
+        dataRelayTask = &taskSpace ;
 
-        return ESP_OK ;
+
+        return err_code_t::OK ;
     }
 
-    Nema(int8_t stepPin , int8_t dirPin): stepPin(stepPin) , dirPin( dirPin ){} 
 
     static void dataRelayTask(void * arg){
         auto instance { *static_cast< Nema*>( arg ) } ;
         auto& scurve = instance.scurve ; 
-        auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = instance.message ;  
-        
-        
-        
+        auto& stepper = instance.stepper ; 
+        auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = message ;  
 
-        while ( !dataRelayTaskHandle->notifyWait( dataRelayStart , portMAX_DELAY)){}
 
-        bool relay { true }; 
         
-        while ( relay ){
-            relay = notifyWait( dataRelayLoopON , 0) ;
+        while ( ! Task::stopRequested() ){
             
-
-
-            auto queueFull =  notifyWait( plannersQueueFull , 0 ) ;
+            auto queueFull =  Task::notifyWait( plannersQueueFull , 0 ) ;
 
             if ( queueFull ){
                 motionBlock_t motion{} ;
                 for (auto i{0} ; i < Nema::maxBuffor ; ++i){
-                    xQueueReceive( scurve->motionsQ , &motion,  pdMS_TO_TICKS( 10 ) ) ;
-                    stepper->addQueueEntity( motion ) ;
+                    motion = scurve->receive() ; 
+                    stepper->enqueue( motion ) ;
                 }
-
             }
-
-
-
         }
-        vTaskDelete(nullptr);
-    
     }
 
-    Nema() = default ;
 
-    static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n")
+    static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n");
 public:
 
 
-    static etl::optional< Nema > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
-        Nema tmp{ stepPin, dirPin} ; 
-
-        taskSpace = ITask<TaskType>::createTask( dataRelayTask, &tmp , 2048 , 4);
-        if ( taskSpace == etl::nullopt) return etl::nullopt ; 
+    bool isRunning(const uint8_t engineNum)const  { return true ;}
+    long position(const uint8_t engineNum)   { return 0 ;}
 
 
-
-        if ( tmp.init( planner , engine, *taskSpace) != ESP_OK )
-            return etl::nullopt ; 
-        
-        return tmp ; 
-    }
-
-    bool isRunning(const uint8_t engineNum)const  ;
-    long position(const uint8_t engineNum)   ;
-
-
-    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  ;
-    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  ;
-    void moveToCup( const moveBlock_t &move , const moveInfo_t flags , const int wait   ){
+    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  { }
+    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  { }
+    void moveToCup( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait  = 0   ){
         // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
         // moveToCup  just manages whether instantly make moveo or enqu in normal manner
         // manages que position motionBlock_t
-        if  ( !flags.enqueue ){
-            scurve.stop() ; // should not use vTaskSuspend , 
-            while ( auto motion  = scurve->calculateFrequency( move ) ){
-                stepper->addQueueEntry( motion ) ; 
-            }
-            scurve.start();
+        if  ( flags.enqueue ){
+
+            scurve.enqueue( move ) ;
         }
         else{
 
-            scurve.enqueue( move ) ;
+            scurve.stop() ;  
+            while ( auto motion  = scurve->calculateFrequency( move ) ){
+                stepper->enqueue( motion ) ; 
+            }
+            scurve.start();
         }
     }
 
 
-    void update(const uint32_t blocksToUpdate = ALL)  ;
+    void update(const uint32_t blocksToUpdate = ALL)  {}
 
-    void flush(const uint32_t motionsToFlush = ALL)  ;
+    void flush(const uint32_t motionsToFlush = ALL)  {}
 
-    void stop(const bool flush  , const bool instantly   )  ;
-    void start(void)  ;
+    bool stop()  {}
+    bool start()  {
+
+
+        stepper.start();
+        scurve.start() ; 
+
+        dataRelayTask = Task::createTask( dataRelayTask, &this , 2048 , 4);
+        if ( dataRelayTask == etl::nullopt) return false ; 
+
+
+     }
  
 
 };
