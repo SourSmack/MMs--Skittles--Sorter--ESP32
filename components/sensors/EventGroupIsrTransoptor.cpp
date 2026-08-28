@@ -52,13 +52,13 @@ int EventGroupIsrTransoptor::init(EventGroupHandle_t &evtGroup , EventBits_t evt
     return err_code ;
 }
 
-bool  EventGroupIsrTransoptor::listen_IT(void)  
+bool  EventGroupIsrTransoptor::listenIT(void)  
 {
     if ( gpio_set_intr_type( (gpio_num_t)phototransistorPin, GPIO_INTR_POSEDGE) != ESP_OK) return false ;
     return true; 
 }
 
-bool  EventGroupIsrTransoptor::stopListening_IT(void)   
+bool  EventGroupIsrTransoptor::stopListeningIT(void)   
 {
     if ( gpio_set_intr_type( (gpio_num_t)phototransistorPin, GPIO_INTR_DISABLE) != ESP_OK) return false ;
     return true ;

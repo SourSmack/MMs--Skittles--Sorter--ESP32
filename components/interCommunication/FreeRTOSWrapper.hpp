@@ -9,9 +9,9 @@ private:
     TaskHandle_t task;
     etl::atomic< bool > taskRunning { false } ;
 
-    ~Task(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
 public:
 
+    ~Task(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
         
         
 

@@ -1,3 +1,7 @@
+.devcontainer
+.vscode 
+.gitignore 
+.dependencies.lock
 .cache/
 .clangd/
 # macOS

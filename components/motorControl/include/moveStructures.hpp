@@ -8,6 +8,10 @@ struct motionBlock_t
     uint32_t steps ;
     bool dir : 1 ;
 
+    explicit operator bool(){
+        if ( ticks == 0 && steps == 0 && dir == 0 ) return false ;
+        return true ;
+    }
 };
 
 

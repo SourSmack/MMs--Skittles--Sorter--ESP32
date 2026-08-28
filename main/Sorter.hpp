@@ -22,7 +22,7 @@
 
 #include "esp_log.h"
 #include "moveStructures.hpp"
-
+#include "EventFlags.hpp"
 
 
 #define DRIVER_I2S_DIRECT FasDriver::I2S_DIRECT
@@ -99,45 +99,32 @@ enum class sorterStatus{
     ERRORhomingSlide
 
 };
-
 template < 
-    class T ,
-    class MemberType, 
-    uint16_t commandsNum 
-> 
-struct EventFlags_t{
-    T  &pEventGroup  ;
-    const etl::array< MemberType T::* , commandsNum> memberMap; 
+    EngineConcept SlideEngineType , 
+    SensorConcept SlideSensorType , 
 
+    EngineConcept DisksEngineType, 
+    SensorConcept DisksSensorType, 
 
-    EventFlags_t( T & eventGroup, etl::array< MemberType T::* , commandsNum> mm ): pEventGroup( eventGroup ) , memberMap( mm ) {}
-    
-    etl::optional< MemberType > operator[](uint32_t idx);
-};
-
-template < 
-    StaticFactoryEngine slideEngine , 
-    StaticFactoryEngine disksEngine , 
-    StaticFactorySensor colorSensor, 
-    StaticFactorySensor slideSensor, 
-    class eventGroupType , 
-    class memberType , 
-    uint16_t commandsNum
+    TaskConcept  TaskType  ,
+    EventFlagsConcept EventFlagsType; 
 > 
 class Sorter{
 
 private:
-    slideEngine &slideEngine;
-    disksEngine &disksEngine;
+    SlideEngineType &slideEngine;
+    DisksSensorType &slidePositionSensor;
 
-    colorSensor &colorSensor ; 
-    slideSensor &slidePositionSensor;
+    DisksEngineType &disksEngine;
+    SlideSensorType &colorSensor ; 
     
-    EventFlags_t < eventGroupType , memberType , commandsNum > &eventGroup ; 
+    EventFlagsType < eventGroupType , memberType , commandsNum > &eventGroup ; 
 
     sorterStatus status{ sorterStatus::OK }    ; 
     sorterStatus homingSlide();
     sorterStatus homingDisks(); 
+
+    TaskType *sortingTask  { nullptr } ;
 
     void _startSorting() ; 
 
@@ -149,6 +136,6 @@ public:
 
     static void startSorting(void *pvParameter) ;
 
-    void stopSorting() ; 
+    sorterStatus stopSorting() ; 
     sorterStatus getStatus()const;
 };

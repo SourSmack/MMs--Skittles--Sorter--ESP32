@@ -110,12 +110,12 @@ int Camera::init(pc_uart_config_t &uartCfg, uart_port_t  uartNm , uint16_t txPin
 const void*  Camera::getSample()const  { return static_cast< const void* >( &last_word )   ; } 
 
 
-bool Camera::stopListening_IT(){
+bool Camera::stopListeningIT(){
     vTaskSuspend( task);
     return true ;
 }
 
-bool Camera::listen_IT(){
+bool Camera::listenIT(){
     vTaskResume( task);
     return true;
 }

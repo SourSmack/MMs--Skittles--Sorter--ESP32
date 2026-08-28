@@ -34,10 +34,10 @@ public:
     static etl::optional< EventGroupIsrTransoptor > create(uint32_t photoPin , uint32_t emitPin , EventGroupHandle_t &evtGrp , EventBits_t evtBits ); 
     
 
-    bool listen_IT() override ;
+    bool listenIT() override ;
     
     const void* getSample()const override  ;
-    bool stopListening_IT() override  ;
+    bool stopListeningIT() override  ;
 
     bool turnOn()override  ;
     bool turnOff()override  ;

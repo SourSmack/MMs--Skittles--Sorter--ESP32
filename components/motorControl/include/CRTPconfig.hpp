@@ -2,7 +2,7 @@
 #pragma once
 #include "moveStructures.hpp"
 #include <concepts>
-#include "../../includes/etl/include/etl/optional.h"
+#include "etl/optional.h"
 
 
 
@@ -20,7 +20,8 @@ concept EngineConcept = requires( T Engine, const T ConstEngine ,
     { ConstEngine.isRunning() } -> std::same_as< bool > ; 
     { Engine.position() }       -> std::same_as< long > ;
     
-
+    { Engine.start() } -> std::same_as< bool > ;
+    { Engine.stop() } -> std::same_as< bool > ;
 
     { Engine.move(      move , flags , wait ) } -> std::same_as< void > ; 
     { Engine.moveTo(    move , flags , wait ) } -> std::same_as< void > ;
@@ -77,7 +78,7 @@ concept TaskConcept =
     { T::notifyWait(  message ,  delay ) }  -> std::same_as< bool > ;
     { T::stopRequested() }   -> std::same_as< bool > ;
     { T::waitMS( ms )} -> std::same_as<void> ;
-
+    { T::MAX_DELAY } -> std::same_as<uint32_t> ;
 };
 
 template< class T > 
@@ -87,8 +88,8 @@ concept SensorConcept =
     { Sensor.turnOn()}              -> std::same_as< bool > ;
     { Sensor.turnOff()}             -> std::same_as< bool > ;
     { ConstSensor.getSample() }     -> std::same_as< const void* > ; 
-    { Sensor.stopListening_IT()}    -> std::same_as< bool >   ;
-    { Sensor.listen_IT()}           -> std::same_as< bool >   ;
+    { Sensor.stopListeningIT()}    -> std::same_as< bool >   ;
+    { Sensor.listenIT()}           -> std::same_as< bool >   ;
 };
 
 

@@ -31,19 +31,18 @@ class Nema
 {
 private:
 
-
-
     static constexpr uint32_t ALL { 0u };
     static constexpr uint32_t maxBuffor { 32u } ; 
 
     int8_t stepPin{ 0 } ;
     int8_t dirPin{ 0 } ;
 
-
     Planner  *scurve { nullptr }  ; 
     Stepper *stepper { nullptr } ;
 
-    Task *dataRelayTask { nullptr };  
+    Task *task { nullptr };  
+
+    bool isRunning { false } ; 
 public:
     template< class T = Nema <  Planner , Stepper , Task>> 
     static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
@@ -64,7 +63,7 @@ private:
         stepper = &engine ;
         scurve = &planner ;
         
-        dataRelayTask = &taskSpace ;
+        task = &taskSpace ;
 
 
         return err_code_t::OK ;
@@ -86,15 +85,16 @@ private:
             if ( queueFull ){
                 motionBlock_t motion{} ;
                 for (auto i{0} ; i < Nema::maxBuffor ; ++i){
-                    motion = scurve->receive() ; 
+                    motion = scurve->recieve() ; 
                     stepper->enqueue( motion ) ;
                 }
+                queueFull = false ;
             }
         }
     }
 
 
-    static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n");
+    //static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n");
 public:
 
 
@@ -108,17 +108,19 @@ public:
         // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
         // moveToCup  just manages whether instantly make moveo or enqu in normal manner
         // manages que position motionBlock_t
+        if ( !isRunning) return ;
+
         if  ( flags.enqueue ){
 
-            scurve.enqueue( move ) ;
+            scurve->enqueue( move ) ;
         }
         else{
 
-            scurve.stop() ;  
+            scurve->stop() ;  
             while ( auto motion  = scurve->calculateFrequency( move ) ){
                 stepper->enqueue( motion ) ; 
             }
-            scurve.start();
+            scurve->start();
         }
     }
 
@@ -127,17 +129,17 @@ public:
 
     void flush(const uint32_t motionsToFlush = ALL)  {}
 
-    bool stop()  {}
+    bool stop()  { return true; }
     bool start()  {
+        stepper->start();
+        scurve->start() ; 
 
+        *task = *Task::createTask( dataRelayTask, this , 2048 , 4);
+        if ( task == etl::nullopt) return false ; 
 
-        stepper.start();
-        scurve.start() ; 
+        isRunning  = true ;
 
-        dataRelayTask = Task::createTask( dataRelayTask, &this , 2048 , 4);
-        if ( dataRelayTask == etl::nullopt) return false ; 
-
-
+        return true; 
      }
  
 

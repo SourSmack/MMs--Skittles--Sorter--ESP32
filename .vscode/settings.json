@@ -16,6 +16,6 @@
     "-j=2",
     "--compile-commands-dir=/home/sourish/cameraCaptchure/esp/generic_gpio/build"
   ],
-  "C_Cpp.errorSquiggles": "enabled",
+  "C_Cpp.errorSquiggles": "disabled",
   "idf.flashType": "UART"
 }

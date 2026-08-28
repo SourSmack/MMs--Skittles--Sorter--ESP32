@@ -12,21 +12,6 @@
 
 class Task;
 
-struct HardwareContext 
-{
-    etl::optional< EventGroupIsrTransoptor >  slideSensor ;
-    etl::optional< Nema< ScurvePlanner , Task >>  slideEngine ; 
-    FastAccelStepperEngine fastSlideEngine; 
-
-    etl::optional < Camera > disksSensor ;
-    FastAccelStepperEngine fastDisksEngine; 
-    etl::optional< Nema< ScurvePlanner , FreeRtosWrapperL>>  disksEngine ; 
- 
-    etl::optional< EventFlags_t<EventGroupHandle_t , EventBits_t ,16 >>   eventGroup;
-    pc_uart_config_t uart_cfg ;  
-    ScurvePlanner planner ;
-};
-
 
 using genericSorter = Sorter< 
                         Nema< ScurvePlanner , Task > ,
@@ -35,7 +20,8 @@ using genericSorter = Sorter<
                         EventGroupIsrTransoptor  , 
                         EventGroupHandle_t , 
                         EventBits_t  ,
-                        16 > ;
+                        16 
+                        > ;
 
                         
 bool config( HardwareContext &peripherals , etl::optional< genericSorter < > &sorter );
@@ -85,32 +71,54 @@ extern "C" void app_main(void)
 
 }
 
+struct HardwareContext 
+{
+    etl::optional< SensorConcept EventGroupIsrTransoptor >  slideSensor ;
+    etl::optional< Nema< PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task >>  slideEngine ; 
+    etl::optional< FastAccelWrapper > slideStepper; 
+    etl::optional< ScurvePlanner > slidePlanner ; 
+
+    etl::optional < Camera > disksSensor ;
+    etl::optional< Nema< PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task >>  disksEngine ; 
+    etl::optional< FastAccelWrapper > disksStepper; 
+    etl::optional< ScurvePlanner > disksPlanner ;
+ 
+    etl::optional< EventFlags_t<EventGroupHandle_t , EventBits_t ,16 >>   eventGroup;
+    
+    etl::optional< ScurvePlanner > planner ;
+};
+
 bool config( HardwareContext &peripherals , etl::optional< genericSorter > &sorter )
 {
-    auto& [ slideSensor , slideEngine , fastSlideEngine ,disksSensor , fastDisksEngine , disksEngine , eventGroup ,uartCfg , planner] = peripherals ; 
+    auto& [ slideSensor , slideEngine , slideStepper , slidePlanner , disksSensor ,  disksEngine , disksStepper  , disksPlanner ,  eventFlags   ] = peripherals ; 
+    using SlideSensorType  = decltype( slideSensor ) ;
+    using SlideEngineType  = decltype( slideEngine ) ; 
+    using SlideStepperType = decltype( slideStepper ) ;
+    using SlidePlannerType = decltype( slidePlanner ) ;
 
-    if (  eventGroup  = xEventGroupCreate() ; eventGroup == nullptr )  
+    using DisksSensorType  = decltype( disksSensor ) ;
+    using DisksEngineType  = decltype( disksEngine ) ;
+    using DisksStepperType = decltype( disksStepper ) ;
+    using DisksPlannerType = decltype( disksPlanner ) ;
+
+    using EventFlagsType   = decltype( eventFlags ) ;
+
+
+    if (  eventFlags  = EventFlagsType::create() ; eventGroup == etl::nullopt )  
         return false ;
     
-    if ( slideSensor = EventGroupIsrTransoptor::create( PHOTO_PIN, EMITTER_PIN , eventGroup , BIT_TRANSOPTOR_INPUT   ); slideSensor == etl::nullopt )
+    if ( slideSensor = SlideSensorType::create( PHOTO_PIN, EMITTER_PIN , eventFlags , BIT_TRANSOPTOR_INPUT   ); slideSensor == etl::nullopt )
         return false ;
-    if ( slideEngine = Nema::create( BOT_STEP_PIN , BOT_DIR_PIN , planner , fastSlideEngine ) ; slideEngine == etl::nullopt )
+    if ( slideEngine = SlideEngineType::create( BOT_STEP_PIN , BOT_DIR_PIN , slidePlanner , slideStepper ) ; slideEngine == etl::nullopt )
         return false ;
 
 
 
 
-    uartCfg.baud_rate = 115200 ;
-    uartCfg.data_bits = UART_DATA_8_BITS ;
-    uartCfg.parity = UART_PARITY_DISABLE ;
-    uartCfg.source_clk = UART_SCLK_DEFAULT ;
-    uartCfg.stop_bits = UART_STOP_BITS_1 ;
-    uartCfg.flow_ctrl = UART_HW_FLOWCTRL_DISABLE ;
-    uartCfg.rx_flow_ctrl_thresh = 0 ;
 
-    disksSensor = Camera::create(COLORSENSOR_RX_BUFF_SIZE , COLORSENSOR_TX_BUFF_SIZE ,  uartCfg , UART_NUM_0 , UART0_TX , UART0_RX ,  eventGroup, BIT_COLORSENSOR_INPUT); 
+    disksSensor = DisksSensorType::create( UART0_TX , UART0_RX  , eventFlags , BIT_COLORSENSOR_INPUT); 
     if ( disksSensor == etl::nullopt ) return false ;
-    disksEngine = Nema::create( TOP_STEP_PIN , TOP_DIR_PIN , planner, fastDisksEngine ) ;
+    disksEngine = Nema::create( TOP_STEP_PIN , TOP_DIR_PIN , planner, disksStepper ) ;
     if ( disksEngine == etl::nullopt ) return false ; 
  
     xEventGroupSetBits ( eventGroup ,   BIT_COLORSENSOR_INPUT   |         
@@ -232,7 +240,7 @@ sorterStatus homingSlide(){
     auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
     auto chamberColor = colorToNum( sample ) ;
 
-    colorSensor.listen_IT() ; 
+    colorSensor.listenIT() ; 
 
     disksEngine.move( spinForever   ); 
 
@@ -240,7 +248,7 @@ sorterStatus homingSlide(){
 
     disksEngine.stop( flush = true , instantly = true ) ;
 
-    colorSensor.stopListening_IT() ;
+    colorSensor.stopListeningIT() ;
 
     if ( !( bits & ~BIT_COLORSENSOR_INPUT )) return sorterStatus::ERRORhomingSlide ; 
 
@@ -250,11 +258,11 @@ sorterStatus homingSlide(){
 
 sorterStatus homingDisks(){
 
-    slidePositionSensor.listen_IT();
+    slidePositionSensor.listenIT();
     slideEngine.move( spinForever ) ;
     auto bits = xEventGroupWaitBits( eventGroup, BIT_TRANSOPTOR_INPUT,   portMAX_DELAY);
     slideEngine.stop( flush = true , instantly = true ) ;
-    slidePositionSensor.stopListening_IT() ;
+    slidePositionSensor.stopListeningIT() ;
 
     if ( !( bits & !BIT_TRANSOPTOR_INPUT)) return sorterStatus::ERRORhomingSlide;
 

@@ -9,7 +9,7 @@
 
 #define COLORSENSOR_WORD_SIZE 20 
 
-class Camera : public ISensor 
+class Camera  
 {
 private:
     
@@ -45,8 +45,8 @@ public:
     static etl::optional< Camera > create( int rxBuffSize, int queSize , pc_uart_config_t &uartCfg ,uart_port_t  uartNum,  uint16_t txPin , uint16_t rxPin , EventGroupHandle_t &eg, EventBits_t eb  );
     
 
-    bool stopListening_IT()override;
-    bool listen_IT()override;
+    bool stopListeningIT()override;
+    bool listenIT()override;
     bool turnOn()override;
     bool turnOff()override;
     const void* getSample()const override;
