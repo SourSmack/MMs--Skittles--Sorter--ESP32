@@ -72,16 +72,62 @@ public:
 
 };
 
+class SensorMOCK {
+public:
+
+
+    MOCK_METHOD( ( bool ) , turnOn , () );
+    MOCK_METHOD( ( bool ) , turnOff , () );
+    MOCK_METHOD( ( const void* ) , getSample , () , ( const ) );
+    MOCK_METHOD( ( bool ) , stopListeningIT , () );
+    MOCK_METHOD( ( bool ) , listenIT , () );
+    
+
+};
+static_assert( SensorConcept< SensorMOCK > , "SensorMOCK doesn't meet concept requirments \n");
+
+class PlannerMOCK{
+public:
+
+    static  etl::optional< PlannerMOCK > create() {  return  etl::optional< PlannerMOCK>{ etl::in_place} ; }
+
+    MOCK_METHOD( ( motionBlock_t ) , calculateFrequency , ( const moveBlock_t &move ));
+    MOCK_METHOD( ( motionBlock_t ) , recieve ,  ());
+    MOCK_METHOD( ( void ) , stop , ( ));
+    MOCK_METHOD( ( void ) , start , ());
+    MOCK_METHOD( ( void ) , enqueue , ( const moveBlock_t &move ));
+ 
+};
+static_assert( PlannerConcept< PlannerMOCK > , "PlannerMOCK doesn't meet concept requirments \n");
+
+class StepperMOCK{
+    struct ConstructorKey{};
+public:
+    explicit StepperMOCK( ConstructorKey) {} 
+    
+    static etl::optional<  StepperMOCK > create( const uint16_t step , const uint16_t dir ){
+        return etl::optional< StepperMOCK >{ etl::in_place , ConstructorKey{} } ;
+    }
+
+    MOCK_METHOD( ( void ) , enqueue , ( const motionBlock_t  motion  ));
+    MOCK_METHOD( ( void ) , stop , ());
+    MOCK_METHOD( ( void ) , start , ());
+
+};
+static_assert( StepperConcept< StepperMOCK > , "StepperMOCK doesn't meet concept requirments \n");
 
 template < class Planner , class Stepper , class  Task>
 class EngMOCK {
 private:
-    EngMOCK() = default ;
-    friend etl::optional< EngMOCK > ;
+    struct ConstructorKey{};
 public:
+    EngMOCK( ConstructorKey ){}
 
-
-    MOCK_METHOD( ( bool ) , isRunning ,());
+    static etl::optional< EngMOCK > create( const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace){
+        return etl::optional< EngMOCK >{ etl::in_place , ConstructorKey{} } ;
+    }     
+    
+    MOCK_METHOD( ( bool ) , isRunning ,() , ( const ) );
     MOCK_METHOD( ( long ) , position ,());
     MOCK_METHOD( ( bool ) , start ,());
     MOCK_METHOD( ( bool ) , stop ,());
@@ -90,15 +136,11 @@ public:
     MOCK_METHOD( ( void ) , moveToCup ,( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait ));
                             
 };
-//static_assert( EngineConcept< EngMOCK > , "EngMOCK does not meet concept requirments\n");
 
-class SensorMOCK {
 
-};
+static_assert( EngineConcept< EngMOCK< PlannerMOCK , StepperMOCK,  TaskMOCK > , PlannerMOCK , StepperMOCK,  TaskMOCK> , "EngMOCK does not meet concept requirments\n");
 
-class PlannerMOCK{
 
-};
 
 
 
@@ -107,10 +149,51 @@ using ::testing::Return;
 
 
 TEST( SorterHomingSlideTest , doesSensorDetect ){
+    using mockEng = EngMOCK< PlannerMOCK , StepperMOCK , TaskMOCK> ;
+    using mockSorter  = Sorter< EventFlagsMOCK , TaskMOCK , EngMOCK , SensorMOCK , EngMOCK , SensorMOCK >;
+
+    auto eventFlags  = EventFlagsMOCK::create( ) ;
+    auto task  = TaskMOCK::create( ... ) ;
+
+    auto slideStepper  = StepperMOCK::create( ... ) ;
+    auto slidePlanner = PlannerMOCK::create( ... ) ;
+    auto slideEng = mockEng::create( .. ) ;
+
+    auto slideSensor;
 
 
+
+    auto disksPlanner  = PlannerMOCK::create( ... );
+    auto disksStepper = StepperMOCK::create( ... ) ;
+    auto disksEng = mockEng::create( ...  );
+
+    auto disksSensor = SensorMOCK::create( ... ) ;
+
+
+    auto sorter  = mockSorter::create( ) ;
+
+    EXPECT_CALL( mockSensor , getSample().WillOnce(testing::Return(true)));
+    //  .... and so on testing 
 }
 
+sorterStatus homingSlide(){
+    auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
+    auto chamberColor = colorToNum( sample ) ;
+
+    colorSensor.listenIT() ; 
+
+    disksEngine.move( spinForever   ); 
+
+    while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+    
+
+    disksEngine.stop( flush = true , instantly = true ) ;
+
+    colorSensor.stopListeningIT() ;
+
+    return sorterStatus::OK ;
+
+}
 
 
 
