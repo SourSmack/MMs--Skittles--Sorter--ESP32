@@ -8,71 +8,16 @@
 #include "freertos/event_groups.h"
 
 #include "Sorter.hpp"
-#include "FreeRtosWrapper.hpp"
-
-class Task;
+#include "FreeRTOSWrapper.hpp"
 
 
-using genericSorter = Sorter< 
-                        Nema< ScurvePlanner , Task > ,
-                        Nema< ScurvePlanner , Task > , 
-                        Camera , 
-                        EventGroupIsrTransoptor  , 
-                        EventGroupHandle_t , 
-                        EventBits_t  ,
-                        16 
-                        > ;
-
-                        
-bool config( HardwareContext &peripherals , etl::optional< genericSorter < > &sorter );
-
-
-etl::optional< MemberType > EventFlags_t::operator[](uint32_t idx){
-    if ( idx  > commandsNum ) return etl::nullopt ;
-
-    return pEventGropu.*(memberMap[idx]);
-}
-;
-
-extern "C" void app_main(void)
+struct UserHardwareConfiguration 
 {
-    HardwareContext peripherals ;
-    etl::optional< genericSorter > opt_sorter ;
 
-    if ( !config( peripherals , opt_sorter ) ){
-        ESP_LOGE("CONFIG", "Peripherals configuration accured error\n", ESP_FAIL);
-        return; 
-    }
-    auto &sorter  = *opt_sorter ;
+    etl::optional< EventGroup<EventGroupHandle_t , EventBits_t >>   eventFlags;
+    
+    etl::optional< FREETask > sortingTask ; 
 
-    TaskHandle_t sortingTcb = nullptr; 
-    xTaskCreate(  sorter.startSorting , "sorting()" , 2048  , &sorter  , 4, &sortingTcb) ;
-
-    auto status{ sorterStatus::OK } ;
-    while (true){ 
-
-        status = sorter.getStatus() ;
-        if ( status == sorterStatus::OK  || status == sorterStatus::busy ){
-            taskYIELD() ;
-            continue ; 
-        }
-
-        ESP_LOGE("ERROR", "Peripherals error accured: %d\n", status );
-        sorter.stopSorting() ;
-
-    }
-
-
-
-    while (true){
-        ESP_LOGE("APP_MAIN", "Program somehow run away ", ESP_FAIL);
-        vTaskDelay( pdMS_TO_TICKS(1000));
-    }
-
-}
-
-struct HardwareContext 
-{
     etl::optional< SensorConcept EventGroupIsrTransoptor >  slideSensor ;
     etl::optional< Nema< PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task >>  slideEngine ; 
     etl::optional< FastAccelWrapper > slideStepper; 
@@ -83,14 +28,18 @@ struct HardwareContext
     etl::optional< FastAccelWrapper > disksStepper; 
     etl::optional< ScurvePlanner > disksPlanner ;
  
-    etl::optional< EventFlags_t<EventGroupHandle_t , EventBits_t ,16 >>   eventGroup;
-    
-    etl::optional< ScurvePlanner > planner ;
 };
 
-bool config( HardwareContext &peripherals , etl::optional< genericSorter > &sorter )
+bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional< genericSorter > &sorter )
 {
-    auto& [ slideSensor , slideEngine , slideStepper , slidePlanner , disksSensor ,  disksEngine , disksStepper  , disksPlanner ,  eventFlags   ] = peripherals ; 
+    auto& [ eventFlags ,
+            sortingTask , 
+            slideSensor , slideEngine , slideStepper , slidePlanner , 
+            disksSensor ,  disksEngine , disksStepper  , disksPlanner ,  ] = peripherals ; 
+            
+    using EventFlagsType   = decltype( eventFlags ) ;
+    using TaskType         = decltype( sortingTask ) ;
+
     using SlideSensorType  = decltype( slideSensor ) ;
     using SlideEngineType  = decltype( slideEngine ) ; 
     using SlideStepperType = decltype( slideStepper ) ;
@@ -101,15 +50,22 @@ bool config( HardwareContext &peripherals , etl::optional< genericSorter > &sort
     using DisksStepperType = decltype( disksStepper ) ;
     using DisksPlannerType = decltype( disksPlanner ) ;
 
-    using EventFlagsType   = decltype( eventFlags ) ;
 
 
-    if (  eventFlags  = EventFlagsType::create() ; eventGroup == etl::nullopt )  
+    if (  eventFlags  = EventFlagsType::create( BIT_COLORSENSOR_INPUT   , BIT_TRANSOPTOR_INPUT , BIT_SLIDE_ENGINE_FINISHED  , BIT_DISK_ENGINE_FINISHED) ; 
+        eventFlags == etl::nullopt )  
         return false ;
+
+    if ( sortingTask = TaskType::create( _sortingFunction  , &sorter , 2024 , 4  ) ; 
+        sortingTask == etl::nullopt) 
+        return false ; 
+
     
-    if ( slideSensor = SlideSensorType::create( PHOTO_PIN, EMITTER_PIN , eventFlags , BIT_TRANSOPTOR_INPUT   ); slideSensor == etl::nullopt )
+    if ( slideSensor = SlideSensorType::create( PHOTO_PIN, EMITTER_PIN , eventFlags , BIT_TRANSOPTOR_INPUT   ); 
+        slideSensor == etl::nullopt )
         return false ;
-    if ( slideEngine = SlideEngineType::create( BOT_STEP_PIN , BOT_DIR_PIN , slidePlanner , slideStepper ) ; slideEngine == etl::nullopt )
+    if ( slideEngine = SlideEngineType::create( BOT_STEP_PIN , BOT_DIR_PIN , slidePlanner , slideStepper ) ; 
+        slideEngine == etl::nullopt )
         return false ;
 
 
@@ -118,54 +74,63 @@ bool config( HardwareContext &peripherals , etl::optional< genericSorter > &sort
 
     disksSensor = DisksSensorType::create( UART0_TX , UART0_RX  , eventFlags , BIT_COLORSENSOR_INPUT); 
     if ( disksSensor == etl::nullopt ) return false ;
-    disksEngine = Nema::create( TOP_STEP_PIN , TOP_DIR_PIN , planner, disksStepper ) ;
+    disksEngine = DisksEngineType::create( TOP_STEP_PIN , TOP_DIR_PIN , disksPlanner, disksStepper ) ;
     if ( disksEngine == etl::nullopt ) return false ; 
  
-    xEventGroupSetBits ( eventGroup ,   BIT_COLORSENSOR_INPUT   |         
-                                        BIT_TRANSOPTOR_INPUT  |
-                                        BIT_SLIDE_ENGINE_FINISHED  |
-                                        BIT_DISK_ENGINE_FINISHED ); 
+    
 
-    sorter.emplace( eventGroup , *slideEngine , *disksEngine , *disksSensor , *slideSensor );
+    sorter.emplace( *eventFlags , *sortingTask ,  *slideEngine , *slideSensor , *disksEngine , *disksSensor   );
     if ( sorter == etl::nullopt ) return false ;
 
     return true ;
 }
 
-void Sorter::startSorting(void *pvParameter) 
+
+
+
+
+
+Sorter( EventFlagsType < eventGroupType , memberType , commandsNum > &p_eventGroup , 
+        TaskType &p_sortingTask  , 
+        SlideEngineType &p_slideEngine , 
+        SlideSensorType &p_slidePositionSensor , 
+        DisksEngineType &p_disksEngine , 
+        DisksSensorType &p_colorSensor  ) : eventGroup( p_eventGroup ) , 
+                                            sortingTask( p_sortingTask )  , 
+                                            slideEngine( p_slideEngine ) , 
+                                            slidePositionSensor( p_slidePositionSensor) , 
+                                            colorSensor( p_colorSensor )
+                                            {} 
+
+
+
+
+
+void Sorter::_sortingFunction(void *pvParameter) 
 {
-    static bool isRunning { false } ; 
-    if (isRunning) return ;
+    auto& pair = *static_cast< 
+                                etl::pair<Sorter* , uint16t > * 
+                                                                 >
+                                                                    ( pvParameter ) ;
+    auto& [ instance , token ] = pair ;
+    auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , colorSensor , status  ] = instance ;
 
-    isRunning = true;
-
-    auto* sorter = static_cast< Sorter* >( pvParameter ) ; 
-
-    sorter->_startSorting() ; 
-
-    isRunning = false ;
-
-    vTaskDelete(nullptr);
-}
-
-void Sorter::_startSorting() {
-    
     if ( status != sorterStatus::OK ) return ;
 
-    if ( homingSlide() != sorterStatus::OK){
+    if ( instance.homingSlide() != sorterStatus::OK){
         status = sorterStatus::ERRORslideEngine ; 
         return ;
     } 
-    if ( homingDisks() != sorterStatus::OK ) {
+    if ( instance.homingDisks() != sorterStatus::OK ) {
         status = sorterStatus::ERRORdisksEngine; 
         return ; 
     }
 
 
-    while (shouldSort){
+    while ( ! FREETask::stopRequested( token ) ){
         disksEngine.move( fetchCandy ) ;
 
-        auto sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ; 
+        const auto& sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ; 
         auto candyColor = colorToNum( sample ) ;
 
         switch ( candyColor ){
@@ -204,14 +169,36 @@ void Sorter::_startSorting() {
     }
 
 
+}
+
+void Sorter::startSorting() {
+    
+   sortingTask.start() ; 
+   /* 
+    static bool isRunning { false } ; 
+    if (isRunning) return ;
+
+    isRunning = true;
+
+    auto* sorter = static_cast< Sorter* >( pvParameter ) ; 
+
+    sorter->startSorting() ; 
+
+    isRunning = false ;
+
+    vTaskDelete(nullptr);
+*/
+
+
+
 
 
 }
 
 void Sorter::stopSorting(){
-    if ( getStatus() == sorterStatus::OK ) return ;
+    sortingTask.stop() ; 
     
-    shouldSort = false ;
+    
 }
 
 
@@ -233,7 +220,6 @@ sorterStatus Sorter::getStatus()const{ return status ; }
 
 
 
-Sorter(EventGroupHandle_t &eg,  IEngine &se , IEngine &de , ISensor &cs  , ISensor &sp) : eventGroup(eg) , slideEngine(se) , disksEngine(de) , colorSensor(cs) , slidePositionSensor(sp) {}
 
 
 sorterStatus homingSlide(){
@@ -244,13 +230,12 @@ sorterStatus homingSlide(){
 
     disksEngine.move( spinForever   ); 
 
-    auto bits = xEventGroupWaitBits( &eventGroup , BIT_COLORSENSOR_INPUT , portMAX_DELAY);   
+    while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+    
 
     disksEngine.stop( flush = true , instantly = true ) ;
 
     colorSensor.stopListeningIT() ;
-
-    if ( !( bits & ~BIT_COLORSENSOR_INPUT )) return sorterStatus::ERRORhomingSlide ; 
 
     return sorterStatus::OK ;
 
@@ -260,11 +245,13 @@ sorterStatus homingDisks(){
 
     slidePositionSensor.listenIT();
     slideEngine.move( spinForever ) ;
-    auto bits = xEventGroupWaitBits( eventGroup, BIT_TRANSOPTOR_INPUT,   portMAX_DELAY);
+
+    while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,   portMAX_DELAY )) {} 
+    
     slideEngine.stop( flush = true , instantly = true ) ;
     slidePositionSensor.stopListeningIT() ;
 
-    if ( !( bits & !BIT_TRANSOPTOR_INPUT)) return sorterStatus::ERRORhomingSlide;
+
 
     return sorterStatus::OK ; 
 

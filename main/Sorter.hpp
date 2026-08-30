@@ -1,29 +1,17 @@
 #pragma once
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
-#include "IEngine.hpp"
-#include "ISensor.hpp"
 
 #include <cstdint>
 #include <algorithm>
 
 
-#include "FastAccelStepperEngine.h"
-#include "FastAccelStepper.h"
 
-#include "ScurvePlanner.hpp"
-#include "Nema.hpp"
 
-#include "EventGroupIsrTransoptor.hpp"
-#include "Camera.hpp"
-#include "ScurvePlanner.hpp"
 
 #include "etl/optional.h"
 
 #include "esp_log.h"
-#include "moveStructures.hpp"
-#include "EventFlags.hpp"
 
+#include "ConceptsConfig.hpp"
 
 #define DRIVER_I2S_DIRECT FasDriver::I2S_DIRECT
 
@@ -99,43 +87,58 @@ enum class sorterStatus{
     ERRORhomingSlide
 
 };
+
 template < 
+    EventFlagsConcept EventFlagsType 
+    TaskConcept  TaskType  ,
+
     EngineConcept SlideEngineType , 
     SensorConcept SlideSensorType , 
 
     EngineConcept DisksEngineType, 
     SensorConcept DisksSensorType, 
 
-    TaskConcept  TaskType  ,
-    EventFlagsConcept EventFlagsType; 
 > 
 class Sorter{
 
+public:
+    Sorter() = delete ;
+    Sorter( EventFlagsType  &p_eventGroup , 
+            TaskType &p_sortingTask  , 
+            SlideEngineType &p_slideEngine , 
+            SlideSensorType &p_slidePositionSensor , 
+            DisksEngineType &p_disksEngine , 
+            DisksSensorType &p_colorSensor  ); 
+
+
+    void startSorting() ; 
+
+    sorterStatus getStatus()const;
+
+    sorterStatus stopSorting() ; 
+
 private:
+
+    EventFlagsType  &eventGroup ; 
+
+    TaskType &sortingTask  ;
+
     SlideEngineType &slideEngine;
-    DisksSensorType &slidePositionSensor;
+    SlideSensorType &slidePositionSensor;
 
     DisksEngineType &disksEngine;
-    SlideSensorType &colorSensor ; 
+    DisksSensorType &colorSensor ; 
     
-    EventFlagsType < eventGroupType , memberType , commandsNum > &eventGroup ; 
+
 
     sorterStatus status{ sorterStatus::OK }    ; 
+    
+
+    static void _sortingFunction(void *pvParameter) ;
+
     sorterStatus homingSlide();
     sorterStatus homingDisks(); 
 
-    TaskType *sortingTask  { nullptr } ;
-
-    void _startSorting() ; 
-
-    bool shouldSort = true ;
-
-public:
-    Sorter() = delete ;
-    Sorter(EventFlags_t< eventGroupType , memberType , commandsNum >  &eventGroup,  Engine &slideEngine , Engine &disksEngine , Sensor &colorSensor  , Sensor &slidePositionSensor) ;
-
-    static void startSorting(void *pvParameter) ;
-
-    sorterStatus stopSorting() ; 
-    sorterStatus getStatus()const;
+    template< class T > 
+    friend  bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional< T > &sorter );
 };

@@ -31,7 +31,7 @@ private:
 public: 
     EventGroupIsrTransoptor() = delete ;
     
-    static etl::optional< EventGroupIsrTransoptor > create(uint32_t photoPin , uint32_t emitPin , EventGroupHandle_t &evtGrp , EventBits_t evtBits ); 
+    static etl::EventFlags< EventGroupIsrTransoptor > create(uint32_t photoPin , uint32_t emitPin , EventGroupHandle_t &evtGrp , EventBits_t evtBits ); 
     
 
     bool listenIT() override ;

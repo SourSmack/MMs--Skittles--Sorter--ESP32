@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include "CRTPconfig.hpp"
-//#include "ScurvePlanner.hpp"
+#include "../../../main/ConceptsConfig.hpp" 
 
-#include "IPlanner.hpp"
+
+
 
 #include "etl/optional.h"
 #include "cstdint"
@@ -42,7 +42,7 @@ private:
 
     Task *task { nullptr };  
 
-    bool isRunning { false } ; 
+    bool running { false } ; 
 public:
     template< class T = Nema <  Planner , Stepper , Task>> 
     static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
@@ -98,7 +98,7 @@ private:
 public:
 
 
-    bool isRunning(const uint8_t engineNum)const  { return true ;}
+    bool isRunning(const uint8_t engineNum)const  { return running ;}
     long position(const uint8_t engineNum)   { return 0 ;}
 
 
@@ -108,7 +108,7 @@ public:
         // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
         // moveToCup  just manages whether instantly make moveo or enqu in normal manner
         // manages que position motionBlock_t
-        if ( !isRunning) return ;
+        if ( !running) return ;
 
         if  ( flags.enqueue ){
 
@@ -137,7 +137,7 @@ public:
         *task = *Task::createTask( dataRelayTask, this , 2048 , 4);
         if ( task == etl::nullopt) return false ; 
 
-        isRunning  = true ;
+        running  = true ;
 
         return true; 
      }

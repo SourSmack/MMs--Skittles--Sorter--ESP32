@@ -1,6 +1,6 @@
 #pragma  once
 #include "FastAccelStepperEngine.h"
-#include "CRTPconfig.hpp"
+#include "../../../main/ConceptsConfig.hpp" 
 #include "FastAccelStepper.h"
 #include <cstdlib>
 
@@ -17,7 +17,6 @@ private:
     FastAccelWrapper() = default ;
     FastAccelWrapper( uint16_t pstep , uint16_t pdir ):step(pstep) , dir(pdir) {} 
 
-    static_assert( StepperConcept< FastAccelWrapper> , "FastAccelWrapper doesn't meet StepperConcept requirments!\n");
 
 public:
 
@@ -32,7 +31,7 @@ public:
 };
 
 
-
+static_assert( StepperConcept< FastAccelWrapper> , "FastAccelWrapper doesn't meet StepperConcept requirments!\n");
 
 
 

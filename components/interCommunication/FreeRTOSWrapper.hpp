@@ -4,25 +4,40 @@
 
 
 
-class Task {
+class FREETask {
+private:
+    template < class T > 
+    static etl::array< etl::pair< T& , uint16_t >, 16 > tokens ; 
 private:
     TaskHandle_t task;
     etl::atomic< bool > taskRunning { false } ;
 
+    bool _stopRequested { false } ;
+    uint32_t notifyMessage { 0 } ;
+
+
+    void * arg { nullptr } ;
+
+    static uint32_t MAX_DELAY ;
 public:
 
-    ~Task(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
+    ~FREETask(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
         
         
 
-    static etl::optional< Task > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
+    static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
 
     void notify( uint8_t message )   ;
     bool requestStop()  ;
     bool join();
 
-    static bool stopRequested();
-    static bool notifyWait( uint8_t message , uint32_t delay );
-    static void waitMs( uint32_t ms ) ;
-
+    static bool stopRequested( TOKEN );
+    static bool notifyWait( TOKEN , uint8_t message , uint32_t delay );
+    /*   looks up some global std::pair structure to see which FREEtask instance is resposible for that TOKEN 
+        
+    */
+    static void waitMs(TOKEN ,  uint32_t ms ) ;
+    
+    bool start() ; 
+    bool stop() ; 
 };

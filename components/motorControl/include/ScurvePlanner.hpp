@@ -4,7 +4,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include  "freertos/queue.h"
-#include <IPlanner.hpp>
 #include <etl/circular_buffer.h>
 #include "moveStructures.hpp"
 #include <etl/optional.h>

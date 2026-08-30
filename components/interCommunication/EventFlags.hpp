@@ -3,14 +3,19 @@
 template < 
     class T ,
     class MemberType, 
-    uint16_t commandsNum 
 > 
-struct EventFlags_t{
-    T  &pEventGroup  ;
-    const etl::array< MemberType T::* , commandsNum> memberMap; 
+class EventGroup{
+private:
+    T  &eventGroup_t  ;
+    const etl::array< MemberType T::* , 32 > memberMap; 
 
+public:
 
-    EventFlags_t( T & eventGroup, etl::array< MemberType T::* , commandsNum> mm ): pEventGroup( eventGroup ) , memberMap( mm ) {}
-    
+    //etl::array< MemberType T::* , 32 > mm
+    static etl::optional< EventGroup > create(T &p_eventGroup ,  uint32_t bits );
+
     etl::optional< MemberType > operator[](uint32_t idx);
+
+    bool bitsWait(   uint32_t message , uint32_t delay) ; 
+    
 };

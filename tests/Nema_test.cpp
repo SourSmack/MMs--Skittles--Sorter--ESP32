@@ -1,3 +1,5 @@
+//  g++ -std=c++23 -g Nema_test.cpp -o Nema_test -I$(pwd)/../components/libs/etl/include
+
 #include "../components/motorControl/include/Nema.hpp"
 #include "etl/optional.h"
 #include <thread>
@@ -64,6 +66,7 @@ public:
     void (*taskFunc)( void*arg ) { nullptr };
     void * arg { nullptr } ;
     
+    static uint32_t MAX_DELAY ;  
 
     static  etl::optional< MOCKtask > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority ){  
         MOCKtask tmp{} ;
@@ -101,6 +104,7 @@ public:
     void _playTask(){  taskFunc( arg ) ;}
 };
 
+uint32_t MOCKtask::MAX_DELAY { 10000 } ;
 
 int main(){
     #define stepPin 0 

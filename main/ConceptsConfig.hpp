@@ -1,17 +1,35 @@
 
 #pragma once
-#include "moveStructures.hpp"
+#include "../components/motorControl/include/moveStructures.hpp"
 #include <concepts>
 #include "etl/optional.h"
+#include "etl/array.h"
 
 
 
+template < 
+        class T , 
+        class EventGroupType , 
+        class EventGroupMembersType 
+        >
+concept EventGroupConcept = requires(   T EventGroup , const T  eventGroup , 
+                                        uint32_t flagsBits , 
+                                        EventGroupType &p_eventGroup , etl::array< EventGroupMembersType EventGroupType::* , 32 > p_membersMap,
+                                        uint32_t idx ,
+                                        uint32_t message , uint32_t delay ){
+    //requires  std::constructible_from< T , EventGroupType , etl::array<  EventGroupMembersType EventGroupType::* , 32 >> ;
+    { T::create(p_eventGroup,  flagsBits )} -> std::same_as< etl::optional< T >> ;
+    { EventGroup.operator[]( idx ) } -> std::same_as< etl::optional< EventGroupMembersType >> ;
+    { EventGroup.bitsWait( message , delay ) } -> std::same_as< bool > ;
+ 
+    
 
+};     
 
 
 template<class T, class Planner , class Stepper , class Task >
 concept EngineConcept = requires( T Engine, const T ConstEngine , 
-                            int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace, 
+                    int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace, 
                             const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  ) {
 
     requires !std::default_initializable<T>;
@@ -78,7 +96,7 @@ concept TaskConcept =
     { T::notifyWait(  message ,  delay ) }  -> std::same_as< bool > ;
     { T::stopRequested() }   -> std::same_as< bool > ;
     { T::waitMS( ms )} -> std::same_as<void> ;
-    { T::MAX_DELAY } -> std::same_as<uint32_t> ;
+    { T::MAX_DELAY } -> std::convertible_to< uint32_t > ;
 };
 
 template< class T > 
@@ -91,7 +109,6 @@ concept SensorConcept =
     { Sensor.stopListeningIT()}    -> std::same_as< bool >   ;
     { Sensor.listenIT()}           -> std::same_as< bool >   ;
 };
-
 
 /*
 template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 

@@ -42,7 +42,7 @@ private:
     int init(pc_uart_config_t &uartCfg ,uart_port_t  uartNum,  uint16_t txPin , uint16_t rxPin , EventGroupHandle_t &eg, EventBits_t eb  );
 public:
     Camera() = delete ;
-    static etl::optional< Camera > create( int rxBuffSize, int queSize , pc_uart_config_t &uartCfg ,uart_port_t  uartNum,  uint16_t txPin , uint16_t rxPin , EventGroupHandle_t &eg, EventBits_t eb  );
+    static etl::EventFlags< Camera > create( int rxBuffSize, int queSize , pc_uart_config_t &uartCfg ,uart_port_t  uartNum,  uint16_t txPin , uint16_t rxPin , EventGroupHandle_t &eg, EventBits_t eb  );
     
 
     bool stopListeningIT()override;
