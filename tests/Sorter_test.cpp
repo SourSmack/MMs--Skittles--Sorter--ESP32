@@ -1,15 +1,22 @@
 //#include "../main/Sorter.hpp"
 /*
-g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test \
-  -I$(pwd)/../components/libs/etl/include \
-  -I/home/sourish/esp-idf-v6.0.2/components/log/include/ \
-  -I/home/sourish/c++_libs/googletest/googlemock/include \
-  -I/home/sourish/c++_libs/googletest/googletest/include
+g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test 
+  -I$(pwd)/../components/libs/etl/include 
+  -I/home/sourish/esp-idf-v6.0.2/components/log/include/ 
+  -I/home/sourish/esp-idf-v6.0.2/components/freertos/config/include/freertos/ 
+  -I/home/sourish/esp-idf-v6.0.2/components/freertos/FreeRTOS-Kernel/include/freertos/  
+  -I/home/sourish/c++_libs/googletest/googlemock/include 
+  -I/home/sourish/c++_libs/googletest/googletest/include 
+ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test -I$(pwd)/../components/libs/etl/include -I/home/sourish/esp-idf-v6.0.2/components/log/include/ -I/home/sourish/esp-idf-v6.0.2/components/freertos/config/include/freertos/ -I/home/sourish/esp-idf-v6.0.2/components/freertos/FreeRTOS-Kernel/include/freertos/ -I/home/sourish/c++_libs/googletest/googlemock/include -I/home/sourish/c++_libs/googletest/googletest/include
+
+  
 
 */
 #include "../main/ConceptsConfig.hpp"
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "FreeRTOS.h"
+#include "event_groups.h"
 
 template < class GroupType  , class MemberType > 
 class  EventFlagsMOCK {
@@ -150,27 +157,28 @@ using ::testing::Return;
 
 TEST( SorterHomingSlideTest , doesSensorDetect ){
     using mockEng = EngMOCK< PlannerMOCK , StepperMOCK , TaskMOCK> ;
+    using mockEventFlags = EventFlagsMOCK< EventGroupHandle_t, EventBits_t   > ; 
     using mockSorter  = Sorter< EventFlagsMOCK , TaskMOCK , EngMOCK , SensorMOCK , EngMOCK , SensorMOCK >;
 
-    auto eventFlags  = EventFlagsMOCK::create( ) ;
-    auto task  = TaskMOCK::create( ... ) ;
+    auto& eventFlags  = mockEventFlags::create( ) ;
+    auto& task  = TaskMOCK::create( ... ) ;
 
-    auto slideStepper  = StepperMOCK::create( ... ) ;
-    auto slidePlanner = PlannerMOCK::create( ... ) ;
-    auto slideEng = mockEng::create( .. ) ;
+    auto& slideStepper  = StepperMOCK::create( ... ) ;
+    auto& slidePlanner = PlannerMOCK::create( ... ) ;
+    auto& slideEng = mockEng::create( .. ) ;
 
-    auto slideSensor;
-
-
-
-    auto disksPlanner  = PlannerMOCK::create( ... );
-    auto disksStepper = StepperMOCK::create( ... ) ;
-    auto disksEng = mockEng::create( ...  );
-
-    auto disksSensor = SensorMOCK::create( ... ) ;
+    auto& slideSensor;
 
 
-    auto sorter  = mockSorter::create( ) ;
+
+    auto& disksPlanner  = PlannerMOCK::create( ... );
+    auto& disksStepper = StepperMOCK::create( ... ) ;
+    auto& disksEng = mockEng::create( ...  );
+
+    auto& disksSensor = SensorMOCK::create( ... ) ;
+
+
+    auto& sorter  = mockSorter::create( ) ;
 
     EXPECT_CALL( mockSensor , getSample().WillOnce(testing::Return(true)));
     //  .... and so on testing 
