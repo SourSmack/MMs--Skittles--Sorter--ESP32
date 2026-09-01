@@ -5,5 +5,5 @@ idf_component_register(
     INCLUDE_DIRS 
         "include"               # Udostępnia folder include/ na zewnątrz
     REQUIRES 
-        includes driver freertos         # Zależności prywatne (potrzebne tylko w .cpp)
+        libs driver freertos         # Zależności prywatne (potrzebne tylko w .cpp)
 )

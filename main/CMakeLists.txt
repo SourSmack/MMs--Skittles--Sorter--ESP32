@@ -6,7 +6,7 @@ idf_component_register(
     REQUIRES 
         motorControl 
         sensors 
-        includes 
+        libs 
         freertos 
         driver
 )

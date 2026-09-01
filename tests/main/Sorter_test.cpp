@@ -143,12 +143,27 @@ public:
     MOCK_METHOD( ( void ) , moveToCup ,( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait ));
                             
 };
-
-
 static_assert( EngineConcept< EngMOCK< PlannerMOCK , StepperMOCK,  TaskMOCK > , PlannerMOCK , StepperMOCK,  TaskMOCK> , "EngMOCK does not meet concept requirments\n");
 
 
+sorterStatus homingSlide(){
+    auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
+    auto chamberColor = colorToNum( sample ) ;
 
+    colorSensor.listenIT() ; 
+
+    disksEngine.move( spinForever   ); 
+
+    while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+    
+
+    disksEngine.stop( flush = true , instantly = true ) ;
+
+    colorSensor.stopListeningIT() ;
+
+    return sorterStatus::OK ;
+
+}
 
 
 using ::testing::_;
@@ -160,6 +175,8 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
     using mockEventFlags = EventFlagsMOCK< EventGroupHandle_t, EventBits_t   > ; 
     using mockSorter  = Sorter< EventFlagsMOCK , TaskMOCK , EngMOCK , SensorMOCK , EngMOCK , SensorMOCK >;
 
+                                        EventGroupType &p_eventGroup , etl::array< EventGroupMembersType EventGroupType::* , 32 > p_membersMap,
+    EventFlags_t eg ;
     auto& eventFlags  = mockEventFlags::create( ) ;
     auto& task  = TaskMOCK::create( ... ) ;
 
@@ -183,26 +200,22 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
     EXPECT_CALL( mockSensor , getSample().WillOnce(testing::Return(true)));
     //  .... and so on testing 
 }
+extern "C" app_main(){
 
-sorterStatus homingSlide(){
-    auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
-    auto chamberColor = colorToNum( sample ) ;
-
-    colorSensor.listenIT() ; 
-
-    disksEngine.move( spinForever   ); 
-
-    while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+    printf("Uruchamianie testow jednostkowych na systemie Linux...\n");
     
-
-    disksEngine.stop( flush = true , instantly = true ) ;
-
-    colorSensor.stopListeningIT() ;
-
-    return sorterStatus::OK ;
+    // Inicjalizacja GMock/GTest (tworzymy sztuczne argumenty argc/argv)
+    int argc = 1;
+    char* argv[] = {(char*)"test_runner", nullptr};
+    ::testing::InitGoogleMock(&argc, argv);
+    
+    // Uruchomienie wszystkich testów
+    int result = RUN_ALL_TESTS();
+    
+    // Zakończenie programu (ważne na targecie Linux, by zwrócić kod błędu do terminala)
+    exit(result);
 
 }
-
 
 
 

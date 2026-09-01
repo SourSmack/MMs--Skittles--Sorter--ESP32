@@ -31,12 +31,12 @@ public:
     bool requestStop()  ;
     bool join();
 
-    static bool stopRequested( TOKEN );
-    static bool notifyWait( TOKEN , uint8_t message , uint32_t delay );
+    static bool stopRequested( uint32_t token  );
+    static bool notifyWait( uint32_t token ,  , uint8_t message , uint32_t delay );
     /*   looks up some global std::pair structure to see which FREEtask instance is resposible for that TOKEN 
         
     */
-    static void waitMs(TOKEN ,  uint32_t ms ) ;
+    static void waitMs( uint32_t token  ,  uint32_t ms ) ;
     
     bool start() ; 
     bool stop() ; 

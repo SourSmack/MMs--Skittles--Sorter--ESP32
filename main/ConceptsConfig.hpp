@@ -13,10 +13,10 @@ template <
         class EventGroupMembersType 
         >
 concept EventGroupConcept = requires(   T EventGroup , const T  eventGroup , 
-                                        uint32_t flagsBits , 
+                                        const uint32_t flagsBits , 
                                         EventGroupType &p_eventGroup , etl::array< EventGroupMembersType EventGroupType::* , 32 > p_membersMap,
-                                        uint32_t idx ,
-                                        uint32_t message , uint32_t delay ){
+                                        const uint32_t idx ,
+                                        const uint32_t message , const uint32_t delay ){
     //requires  std::constructible_from< T , EventGroupType , etl::array<  EventGroupMembersType EventGroupType::* , 32 >> ;
     { T::create(p_eventGroup,  flagsBits )} -> std::same_as< etl::optional< T >> ;
     { EventGroup.operator[]( idx ) } -> std::same_as< etl::optional< EventGroupMembersType >> ;
@@ -29,7 +29,7 @@ concept EventGroupConcept = requires(   T EventGroup , const T  eventGroup ,
 
 template<class T, class Planner , class Stepper , class Task >
 concept EngineConcept = requires( T Engine, const T ConstEngine , 
-                    int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace, 
+                    const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace, 
                             const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  ) {
 
     requires !std::default_initializable<T>;
@@ -64,8 +64,8 @@ concept PlannerConcept = requires( T Planner , T ConstPlanner ,
 
 template< class T > 
 concept StepperConcept  = requires( T Stepper , const T ConstStepper , 
-                                    motionBlock_t  motion ,
-                                    uint16_t step , uint16_t dir ) { 
+                                    const motionBlock_t  motion ,
+                                    const uint16_t step , const uint16_t dir ) { 
 
     requires ! std::default_initializable<T> ; 
     { Stepper.enqueue(   motion) } -> std::same_as<void > ;
@@ -79,23 +79,25 @@ template< class T>
 concept TaskConcept = 
                     requires( 
                                 T Task , const T ConstTask ,
-                                void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
-                                uint32_t ms , 
-                                uint8_t message ,           
-                                uint32_t delay   
+                                void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
+                                const uint32_t token , 
+                                const uint32_t ms , 
+                                const uint8_t message , const uint32_t delay   
                                                 ){
 
-    { T::createTask(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
+    { T::create(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
     //requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
 
     { Task.notify(  message )  }            -> std::same_as< void > ;
     { Task.requestStop() }   -> std::same_as< bool > ;
     { Task.join() }          -> std::same_as< bool > ; 
+    { Task.stop() } -> std::same_as< bool > ;
+    { Task.start() } -> std::same_as< bool > ;
 
 
-    { T::notifyWait(  message ,  delay ) }  -> std::same_as< bool > ;
-    { T::stopRequested() }   -> std::same_as< bool > ;
-    { T::waitMS( ms )} -> std::same_as<void> ;
+    { T::notifyWait( token ,  message ,  delay ) }  -> std::same_as< bool > ;
+    { T::stopRequested( token ) }   -> std::same_as< bool > ;
+    { T::waitMS(token ,  ms )} -> std::same_as<void> ;
     { T::MAX_DELAY } -> std::convertible_to< uint32_t > ;
 };
 
