@@ -12,11 +12,12 @@ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test
   
 
 */
-#include "../main/ConceptsConfig.hpp"
+#include "ConceptsConfig.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "FreeRTOS.h"
 #include "event_groups.h"
+#include "Sorter.hpp"
 
 template < class GroupType  , class MemberType > 
 class  EventFlagsMOCK {

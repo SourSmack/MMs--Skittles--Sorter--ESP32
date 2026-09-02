@@ -1,20 +1,30 @@
-idf_component_register(SRCS "Sorter_test.cpp"
-                       INCLUDE_DIRS "."
-                       REQUIRES my_module freertos )
+idf_component_register(
+    SRCS "Sorter_test.cpp" 
+         "Nema_test.cpp"
+         "../../main/Sorter.hpp"
+    INCLUDE_DIRS "." 
+                 "../../main"
+                 "../../components/libs/etl/include"
+                 "../../components/interCommunication"
+    REQUIRES freertos interCommunication
+)
 
-# Pobieranie Google Test / Google Mock
+# 2. Pobieranie GTest / GMock
 include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.12.1
+  GIT_TAG        v1.14.0 # Stabilna wersja
 )
 
-# Zapobiegamy instalacji gtest w systemie operacyjnym
+# Wyłączamy generowanie testów samego frameworka GTest
+set(gtest_build_tests OFF CACHE BOOL "" FORCE)
+set(gmock_build_tests OFF CACHE BOOL "" FORCE)
+
+# TĄ LINIJKĘ DODAJEMY - blokuje próby eksportu GTest z zależnościami ESP-IDF
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(googletest)
 
-# UWAGA: W ESP-IDF nie linkujemy "gtest_main", ponieważ ESP-IDF 
-# dostarcza własną funkcję main() w porcie na Linuxa.
-# Linkujemy tylko biblioteki gtest i gmock.
-target_link_libraries(${COMPONENT_LIB} PUBLIC gtest gmock)
+# 3. Linkowanie pobranego GMock do naszego komponentu testowego
+target_link_libraries(${COMPONENT_LIB} PRIVATE gtest gmock)
