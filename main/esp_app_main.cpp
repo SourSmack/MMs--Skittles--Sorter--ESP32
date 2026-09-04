@@ -7,6 +7,18 @@
 #include "EventGroupIsrTransoptor.hpp"
 #include "EventFlags.hpp"
 
+#define TOP_STEP_PIN int8_t(GPIO_NUM_32)
+#define TOP_DIR_PIN GPIO_NUM_33 
+
+#define BOT_STEP_PIN GPIO_NUM_25 
+#define BOT_DIR_PIN GPIO_NUM_26
+
+#define PHOTO_PIN GPIO_NUM_27 
+#define EMITTER_PIN GPIO_NUM_14 
+
+#define UART0_TX GPIO_NUM_1
+#define UART0_RX GPIO_NUM_3
+
 
 using genericSorter = Sorter< 
                         Nema< ScurvePlanner , FREETask > ,
@@ -17,17 +29,6 @@ using genericSorter = Sorter<
                         >;
 
 bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional< genericSorter > &sorter );
-
-int colorToNum( etl::string< COLORSENSOR_WORD_SIZE > &color ){
-    if ( color == "RED") return 0; 
-    else if ( color ==  "ORANGE" ) return 1 ;
-    else if ( color ==  "YELLOW") return 2 ;
-    else if ( color == "PURPLE") return 3 ;
-    else if ( color == "GREEN") return 4 ; 
-    else 
-        return -1 ;
-} 
-
  
 extern "C" void app_main(void)
 {

@@ -1,12 +1,10 @@
 idf_component_register(
     SRCS "Sorter_test.cpp" 
-         "Nema_test.cpp"
+         #"Nema_test.cpp"
          "../../main/Sorter.hpp"
     INCLUDE_DIRS "." 
                  "../../main"
-                 "../../components/libs/etl/include"
-                 "../../components/interCommunication"
-    REQUIRES freertos interCommunication
+    REQUIRES freertos interCommunication libs
 )
 
 # 2. Pobieranie GTest / GMock

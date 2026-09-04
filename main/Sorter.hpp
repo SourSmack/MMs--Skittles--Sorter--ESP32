@@ -8,31 +8,22 @@
 
 
 #include "etl/optional.h"
+#include "etl/string.h"
 
-#include "esp_log.h"
+#include "FreeRTOSWrapper.hpp"
+
 
 #include "ConceptsConfig.hpp"
 
-#define DRIVER_I2S_DIRECT FasDriver::I2S_DIRECT
+//#define DRIVER_I2S_DIRECT FasDriver::I2S_DIRECT
 
 #define RX_BUFF_SIZE 1024
 
-#define TOP_STEP_PIN int8_t(GPIO_NUM_32)
-#define TOP_DIR_PIN GPIO_NUM_33 
+#define BIT_COLORSENSOR_INPUT 1 << 0  
+#define BIT_TRANSOPTOR_INPUT 1 << 1  
+#define BIT_SLIDE_ENGINE_FINISHED 1 << 2  
+#define BIT_DISK_ENGINE_FINISHED 1 << 3 
 
-#define BOT_STEP_PIN GPIO_NUM_25 
-#define BOT_DIR_PIN GPIO_NUM_26
-
-#define PHOTO_PIN GPIO_NUM_27 
-#define EMITTER_PIN GPIO_NUM_14 
-
-#define BIT_COLORSENSOR_INPUT BIT0
-#define BIT_TRANSOPTOR_INPUT BIT1
-#define BIT_SLIDE_ENGINE_FINISHED BIT2 
-#define BIT_DISK_ENGINE_FINISHED BIT3 
-
-#define UART0_TX GPIO_NUM_1
-#define UART0_RX GPIO_NUM_3
 
 #define COLORSENSOR_RX_BUFF_SIZE 64 
 #define COLORSENSOR_TX_BUFF_SIZE 64 
@@ -88,15 +79,18 @@ enum class sorterStatus{
 
 };
 
+struct UserHardwareConfiguration ; 
+inline int colorToNum( const etl::string< COLORSENSOR_WORD_SIZE > &color );
+
 template < 
-    EventFlagsConcept EventFlagsType 
+    EventGroupConcept EventFlagsType ,
     TaskConcept  TaskType  ,
 
     EngineConcept SlideEngineType , 
     SensorConcept SlideSensorType , 
 
     EngineConcept DisksEngineType, 
-    SensorConcept DisksSensorType, 
+    SensorConcept DisksSensorType 
 
 > 
 class Sorter{
@@ -128,6 +122,7 @@ public:
 
     sorterStatus stopSorting(){ 
         sortingTask.stop() ; 
+        return sorterStatus::OK ;
     }
 
 private:
@@ -149,7 +144,7 @@ private:
 
     static void _sortingFunction(void *pvParameter){
         auto& pair = *static_cast< 
-                                    etl::pair<Sorter* , uint16t > * 
+                                    etl::pair<Sorter* , uint16_t > * 
                                                                     >
                                                                         ( pvParameter ) ;
         auto& [ instance , token ] = pair ;
@@ -222,7 +217,7 @@ private:
         while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
         
 
-        disksEngine.stop( flush = true , instantly = true ) ;
+        disksEngine.stop( ) ;
 
         colorSensor.stopListeningIT() ;
 
@@ -237,7 +232,7 @@ private:
 
         while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,   portMAX_DELAY )) {} 
         
-        slideEngine.stop( flush = true , instantly = true ) ;
+        slideEngine.stop( ) ;
         slidePositionSensor.stopListeningIT() ;
 
 
@@ -249,3 +244,19 @@ private:
     template< class T > 
     friend  bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional< T > &sorter );
 };
+
+
+
+
+inline int colorToNum( const etl::string< COLORSENSOR_WORD_SIZE > &color ){
+    if ( color == "RED") return 0; 
+    else if ( color ==  "ORANGE" ) return 1 ;
+    else if ( color ==  "YELLOW") return 2 ;
+    else if ( color == "PURPLE") return 3 ;
+    else if ( color == "GREEN") return 4 ; 
+    else 
+        return -1 ;
+} 
+
+
+

@@ -7,19 +7,16 @@
 
 
 
-template < 
-        class T , 
-        class EventGroupType , 
-        class EventGroupMembersType 
-        >
-concept EventGroupConcept = requires(   T EventGroup , const T  eventGroup , 
+template < class T >
+concept EventGroupConcept = requires(   T EventGroup , const T  ConstEventGroup , 
+
                                         const uint32_t flagsBits , 
-                                        EventGroupType &p_eventGroup , etl::array< EventGroupMembersType EventGroupType::* , 32 > p_membersMap,
+                                        typename T::GroupType &p_eventGroup ,
                                         const uint32_t idx ,
                                         const uint32_t message , const uint32_t delay ){
     //requires  std::constructible_from< T , EventGroupType , etl::array<  EventGroupMembersType EventGroupType::* , 32 >> ;
-    { T::create(p_eventGroup,  flagsBits )} -> std::same_as< etl::optional< T >> ;
-    { EventGroup.operator[]( idx ) } -> std::same_as< etl::optional< EventGroupMembersType >> ;
+    { T::create( p_eventGroup,  flagsBits )} -> std::same_as< etl::optional< T >> ;
+    { EventGroup.operator[]( idx ) } -> std::same_as< etl::optional< typename T:: MembersType >> ;
     { EventGroup.bitsWait( message , delay ) } -> std::same_as< bool > ;
  
     
@@ -27,19 +24,19 @@ concept EventGroupConcept = requires(   T EventGroup , const T  eventGroup ,
 };     
 
 
-template<class T, class Planner , class Stepper , class Task >
+template< class T >
 concept EngineConcept = requires( T Engine, const T ConstEngine , 
-                    const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace, 
+                            const int8_t stepPin , const int8_t dirPin , typename T::Planner &planner ,typename T::Stepper &engine  , typename T::Task  &task, 
                             const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  ) {
 
-    requires !std::default_initializable<T>;
+    requires !std::default_initializable< T >;
 
-    { T::create(  stepPin ,  dirPin ,  planner , engine  , taskSpace )} -> std::same_as< etl::optional<T>> ;
+    { T::create(  stepPin ,  dirPin ,  planner , engine  , task )} -> std::same_as< etl::optional< T >> ;
     { ConstEngine.isRunning() } -> std::same_as< bool > ; 
     { Engine.position() }       -> std::same_as< long > ;
     
     { Engine.start() } -> std::same_as< bool > ;
-    { Engine.stop() } -> std::same_as< bool > ;
+    { Engine.stop()  } -> std::same_as< bool > ;
 
     { Engine.move(      move , flags , wait ) } -> std::same_as< void > ; 
     { Engine.moveTo(    move , flags , wait ) } -> std::same_as< void > ;
@@ -79,10 +76,10 @@ template< class T>
 concept TaskConcept = 
                     requires( 
                                 T Task , const T ConstTask ,
-                                void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
+                                void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
                                 const uint32_t token , 
                                 const uint32_t ms , 
-                                const uint8_t message , const uint32_t delay   
+                                const uint32_t message , const uint32_t delay   
                                                 ){
 
     { T::create(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
@@ -108,8 +105,8 @@ concept SensorConcept =
     { Sensor.turnOn()}              -> std::same_as< bool > ;
     { Sensor.turnOff()}             -> std::same_as< bool > ;
     { ConstSensor.getSample() }     -> std::same_as< const void* > ; 
-    { Sensor.stopListeningIT()}    -> std::same_as< bool >   ;
-    { Sensor.listenIT()}           -> std::same_as< bool >   ;
+    { Sensor.stopListeningIT()}     -> std::same_as< bool >   ;
+    { Sensor.listenIT()}            -> std::same_as< bool >   ;
 };
 
 /*

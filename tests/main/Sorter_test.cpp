@@ -15,21 +15,23 @@ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test
 #include "ConceptsConfig.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "FreeRTOS.h"
-#include "event_groups.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "Sorter.hpp"
 
-template < class GroupType  , class MemberType > 
-class  EventFlagsMOCK {
+template < class T  , class N > 
+class  EventGroupMOCK {
 public:
-    static etl::optional< EventFlagsMOCK > create( GroupType & p_eventGroup , const uint32_t bits){ return etl::optional< EventFlagsMOCK >{etl::in_place} ;}
+    using  GroupType  = T ;
+    using MembersType = N ;
+    static etl::optional< EventGroupMOCK > create( T & p_eventGroup , const uint32_t flagsBits){ return etl::optional< EventGroupMOCK >{etl::in_place} ;}
 
 
     
-    
-    MOCK_METHOD( ( etl::optional<  MemberType > ) , At , ( const uint32_t idx ) ) ;
+    // helper method for operator[] 
+    MOCK_METHOD( ( etl::optional<  T > ) , At , ( const uint32_t idx ) ) ;
 
-    etl::optional< MemberType >operator[]( const uint32_t idx ){ 
+    etl::optional< N >operator[]( const uint32_t idx ){ 
         return At(idx);
     }
 
@@ -38,7 +40,7 @@ public:
 };
 struct DummyGroup{} ;
 struct DummyMember{} ;
-static_assert( EventGroupConcept < EventFlagsMOCK< DummyGroup , DummyMember >, DummyGroup , DummyMember > ) ;
+static_assert( EventGroupConcept < EventGroupMOCK< EventGroupHandle_t, EventBits_t   >> ) ;
 
 class TaskMOCK {
 public:
@@ -124,17 +126,22 @@ public:
 };
 static_assert( StepperConcept< StepperMOCK > , "StepperMOCK doesn't meet concept requirments \n");
 
-template < class Planner , class Stepper , class  Task>
+template < class T , class N , class  M>
 class EngMOCK {
 private:
     struct ConstructorKey{};
 public:
+    using Planner = T;
+    using Stepper = N ;
+    using Task  = M ;
     EngMOCK( ConstructorKey ){}
 
-    static etl::optional< EngMOCK > create( const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace){
+    static etl::optional< EngMOCK > create( const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , Task &taskSpace){
         return etl::optional< EngMOCK >{ etl::in_place , ConstructorKey{} } ;
     }     
     
+    static void dataRelayTask(void * arg){ }
+
     MOCK_METHOD( ( bool ) , isRunning ,() , ( const ) );
     MOCK_METHOD( ( long ) , position ,());
     MOCK_METHOD( ( bool ) , start ,());
@@ -144,27 +151,12 @@ public:
     MOCK_METHOD( ( void ) , moveToCup ,( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait ));
                             
 };
-static_assert( EngineConcept< EngMOCK< PlannerMOCK , StepperMOCK,  TaskMOCK > , PlannerMOCK , StepperMOCK,  TaskMOCK> , "EngMOCK does not meet concept requirments\n");
+static_assert( EngineConcept< EngMOCK< PlannerMOCK , StepperMOCK,  TaskMOCK > > , "EngMOCK does not meet concept requirments\n");
 
 
-sorterStatus homingSlide(){
-    auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
-    auto chamberColor = colorToNum( sample ) ;
 
-    colorSensor.listenIT() ; 
 
-    disksEngine.move( spinForever   ); 
 
-    while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
-    
-
-    disksEngine.stop( flush = true , instantly = true ) ;
-
-    colorSensor.stopListeningIT() ;
-
-    return sorterStatus::OK ;
-
-}
 
 
 using ::testing::_;
@@ -173,35 +165,35 @@ using ::testing::Return;
 
 TEST( SorterHomingSlideTest , doesSensorDetect ){
     using mockEng = EngMOCK< PlannerMOCK , StepperMOCK , TaskMOCK> ;
-    using mockEventFlags = EventFlagsMOCK< EventGroupHandle_t, EventBits_t   > ; 
-    using mockSorter  = Sorter< EventFlagsMOCK , TaskMOCK , EngMOCK , SensorMOCK , EngMOCK , SensorMOCK >;
+    using mockEventFlags = EventGroupMOCK< EventGroupHandle_t, EventBits_t   > ; 
+    Sorter  = Sorter< mockEventFlags , TaskMOCK , mockEng , SensorMOCK , mockEng , SensorMOCK >;
 
-                                        EventGroupType &p_eventGroup , etl::array< EventGroupMembersType EventGroupType::* , 32 > p_membersMap,
-    EventFlags_t eg ;
-    auto& eventFlags  = mockEventFlags::create( ) ;
-    auto& task  = TaskMOCK::create( ... ) ;
+    EventGroupHandle_t eg{} ;
+    auto& eventFlags  = mockEventFlags::create(  eg , ( BIT_COLORSENSOR_INPUT | BIT_TRANSOPTOR_INPUT  | BIT_SLIDE_ENGINE_FINISHED | BIT_DISK_ENGINE_FINISHED )  ) ;
+    auto& sortingTask = TaskMOCK::create( nullptr , nullptr , 2048 , 5) ;
 
-    auto& slideStepper  = StepperMOCK::create( ... ) ;
-    auto& slidePlanner = PlannerMOCK::create( ... ) ;
-    auto& slideEng = mockEng::create( .. ) ;
+    auto& slideTask  = TaskMOCK::create( nullptr ,nullptr ,  2048 , 5  ) ;
 
-    auto& slideSensor;
-
-
-
-    auto& disksPlanner  = PlannerMOCK::create( ... );
-    auto& disksStepper = StepperMOCK::create( ... ) ;
-    auto& disksEng = mockEng::create( ...  );
-
-    auto& disksSensor = SensorMOCK::create( ... ) ;
+    auto& slideStepper  = StepperMOCK::create( 0 , 0 ) ;
+    auto& slidePlanner = PlannerMOCK::c argreate() ;
+    auto& slide= mockEng::create(  0 , 0 ,  slidePlanner ,slideStepper  , slideTask ) ;
+    auto slideSensor = SensorMOCK{};
 
 
-    auto& sorter  = mockSorter::create( ) ;
+    auto& disksTask = TaskMOCK::create( nullptr , nullptr , 2048 ,5) ;
+    auto& disksPlanner  = PlannerMOCK::create() ; 
+    auto& disksStepper = StepperMOCK::create( 0 , 0 ) ;
+    auto& disksEng = mockEng::create(  0 , 0 ,  disksPlanner ,disksStepper  , disksTask   );
 
-    EXPECT_CALL( mockSensor , getSample().WillOnce(testing::Return(true)));
-    //  .... and so on testing 
-}
-extern "C" app_main(){
+    auto disksSensor = SensorMOCK{} ;
+
+
+    auto sorter  = mockSorter{ eventFlags , sortingTask , slideEng , slideSensor , disksEng , disksSensor }  ;
+
+     EXPECT_CALL( mockSensor , getSample().WillOnce(testing::Return(true)));
+     //  .... and so on testing 
+
+void app_main(){
 
     printf("Uruchamianie testow jednostkowych na systemie Linux...\n");
     

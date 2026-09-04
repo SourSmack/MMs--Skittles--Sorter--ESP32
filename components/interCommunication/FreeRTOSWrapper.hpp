@@ -1,7 +1,11 @@
 #pragma once
+#include "etl/optional.h"
+#include "etl/array.h"
+#include "etl/atomic.h"
+#include "FreeRTOSWrapper.hpp"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 
 
 class FREETask {
@@ -32,7 +36,8 @@ public:
     bool join();
 
     static bool stopRequested( uint32_t token  );
-    static bool notifyWait( uint32_t token ,  , uint8_t message , uint32_t delay );
+    static bool notifyWait( uint32_t token ,   uint8_t message , uint32_t delay );
+
     /*   looks up some global std::pair structure to see which FREEtask instance is resposible for that TOKEN 
         
     */

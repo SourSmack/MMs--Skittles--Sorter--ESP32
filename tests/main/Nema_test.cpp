@@ -68,7 +68,7 @@ public:
     
     static uint32_t MAX_DELAY ;  
 
-    static  etl::optional< MOCKtask > createTask( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority ){  
+    static  etl::optional< MOCKtask > createTask( void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority ){  
         MOCKtask tmp{} ;
 
         tmp.taskFunc = task ;
@@ -76,7 +76,7 @@ public:
         return tmp;
     }
 
-    void notify( uint8_t message ){  mess = message ; }
+    void notify( const uint8_t message ){  mess = message ; }
     bool requestStop()  { 
         
         if ( taskCount1>= 10 ) return true; 
@@ -86,27 +86,29 @@ public:
     }
     bool join(){  while ( running){} ; return true;  }
 
-    static bool stopRequested(){   
+    static bool stopRequested( const uint32_t token ){   
         if ( taskCount2>= 10 ) return true ; 
         std::cout << "Task stopRequested() num : "  << taskCount2 << std::endl ;
         taskCount2 ++  ; 
         return false  ; 
     }
-    static bool notifyWait( uint8_t message , uint32_t delay ){  
+    static bool notifyWait( const uint32_t token , const uint32_t message , const uint32_t delay ){  
         static auto count { 0 } ; 
         if ( count >= 1 ) return false ;
         count ++ ; 
         std::cout << "MOCKtask : notifyWait()  " << message << std::endl ;
         return true ;
     } 
-    static void waitMS( uint32_t ms ){  std::this_thread::sleep_for( std::chrono::milliseconds( ms ) ); } ;
+    static void waitMS(const uint32_t token , const  uint32_t ms ){  std::this_thread::sleep_for( std::chrono::milliseconds( ms ) ); } ;
 
     void _playTask(){  taskFunc( arg ) ;}
+
+
 };
 
 uint32_t MOCKtask::MAX_DELAY { 10000 } ;
 
-int main(){
+extern "C" void app_main(){
     #define stepPin 0 
     #define dirPin 1 
     auto  planner { *MOCKplanner::create() } ; 

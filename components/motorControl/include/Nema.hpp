@@ -26,7 +26,7 @@ typedef enum {
 }err_code_t;
 
 
-template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 
+template < PlannerConcept T , StepperConcept N , TaskConcept M > 
 class Nema  
 {
 private:
@@ -44,6 +44,9 @@ private:
 
     bool running { false } ; 
 public:
+    using Planner =  T ;
+    using Stepper = N;
+    using Task =  M ;
     template< class T = Nema <  Planner , Stepper , Task>> 
     static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
         T tmp{ stepPin, dirPin} ; 
