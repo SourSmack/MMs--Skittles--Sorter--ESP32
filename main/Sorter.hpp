@@ -80,7 +80,6 @@ enum class sorterStatus{
 };
 
 struct UserHardwareConfiguration ; 
-inline int colorToNum( const etl::string< COLORSENSOR_WORD_SIZE > &color );
 
 template < 
     EventGroupConcept EventFlagsType ,
@@ -165,10 +164,10 @@ private:
         while ( ! FREETask::stopRequested( token ) ){
             disksEngine.move( fetchCandy ) ;
 
-            const auto& sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ; 
-            auto candyColor = colorToNum( sample ) ;
+            const auto candyColorIdx = colorSensor.getSample()  ; 
+            
 
-            switch ( candyColor ){
+            switch ( candyColorIdx ){
                 case   RED  : 
                     slideEngine.moveToCup( cup::RED ) ; 
                     disksEngine.move( flushCandy  );
@@ -206,15 +205,13 @@ private:
 
     }
 
-    sorterStatus homingSlide(){
-        auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
-        auto chamberColor = colorToNum( sample ) ;
+    sorterStatus homingDisks(){
 
         colorSensor.listenIT() ; 
 
         disksEngine.move( spinForever   ); 
 
-        while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+        while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , EventFlagsType::MAX_DELAY )) {}
         
 
         disksEngine.stop( ) ;
@@ -225,12 +222,12 @@ private:
 
     }
 
-    sorterStatus homingDisks(){
+    sorterStatus homingSlide(){
 
         slidePositionSensor.listenIT();
         slideEngine.move( spinForever ) ;
 
-        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,   portMAX_DELAY )) {} 
+        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,  EventFlagsType::MAX_DELAY )) {} 
         
         slideEngine.stop( ) ;
         slidePositionSensor.stopListeningIT() ;
@@ -248,15 +245,6 @@ private:
 
 
 
-inline int colorToNum( const etl::string< COLORSENSOR_WORD_SIZE > &color ){
-    if ( color == "RED") return 0; 
-    else if ( color ==  "ORANGE" ) return 1 ;
-    else if ( color ==  "YELLOW") return 2 ;
-    else if ( color == "PURPLE") return 3 ;
-    else if ( color == "GREEN") return 4 ; 
-    else 
-        return -1 ;
-} 
 
 
 
