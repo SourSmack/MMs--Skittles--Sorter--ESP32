@@ -124,6 +124,47 @@ public:
         return sorterStatus::OK ;
     }
 
+    sorterStatus sortSingleCandy( moveBlock_t cupAddress ){
+
+        moveToCup( cupAddress ) ;        
+        move( flushCandy  );
+        return sorterStatus::OK ;
+    }
+
+    sorterStatus homingDisks(){
+
+        colorSensor.listenIT() ; 
+
+        disksEngine.move( spinForever   ); 
+
+        while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , EventFlagsType::MAX_DELAY )) {}
+        
+
+        disksEngine.stop( ) ;
+
+        colorSensor.stopListeningIT() ;
+
+        return sorterStatus::OK ;
+
+    }
+
+    sorterStatus homingSlide(){
+
+        slidePositionSensor.listenIT();
+        slideEngine.move( spinForever ) ;
+
+        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,  EventFlagsType::MAX_DELAY )) {} 
+        
+        slideEngine.stop( ) ;
+        slidePositionSensor.stopListeningIT() ;
+
+
+
+        return sorterStatus::OK ; 
+
+    }
+
+
 private:
 
     EventFlagsType  &eventGroup ; 
@@ -142,16 +183,13 @@ private:
     
 
     static void _sortingFunction(void *pvParameter){
-        auto& pair = *static_cast< 
-                                    etl::pair<Sorter* , uint16_t > * 
-                                                                    >
-                                                                        ( pvParameter ) ;
+        auto& pair = *static_cast< etl::pair<Sorter* , uint16_t > * >( pvParameter ) ;
         auto& [ instance , token ] = pair ;
         auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , colorSensor , status  ] = instance ;
 
         if ( status != sorterStatus::OK ) return ;
 
-        if ( instance.homingSlide() != sorterStatus::OK){
+        /*if ( instance.homingSlide() != sorterStatus::OK){
             status = sorterStatus::ERRORslideEngine ; 
             return ;
         } 
@@ -159,7 +197,7 @@ private:
             status = sorterStatus::ERRORdisksEngine; 
             return ; 
         }
-
+*/
 
         while ( ! FREETask::stopRequested( token ) ){
             disksEngine.move( fetchCandy ) ;
@@ -204,40 +242,6 @@ private:
 
 
     }
-
-    sorterStatus homingDisks(){
-
-        colorSensor.listenIT() ; 
-
-        disksEngine.move( spinForever   ); 
-
-        while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , EventFlagsType::MAX_DELAY )) {}
-        
-
-        disksEngine.stop( ) ;
-
-        colorSensor.stopListeningIT() ;
-
-        return sorterStatus::OK ;
-
-    }
-
-    sorterStatus homingSlide(){
-
-        slidePositionSensor.listenIT();
-        slideEngine.move( spinForever ) ;
-
-        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,  EventFlagsType::MAX_DELAY )) {} 
-        
-        slideEngine.stop( ) ;
-        slidePositionSensor.stopListeningIT() ;
-
-
-
-        return sorterStatus::OK ; 
-
-    }
-
     template< class T > 
     friend  bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional< T > &sorter );
 };
