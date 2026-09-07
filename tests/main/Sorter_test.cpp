@@ -159,60 +159,135 @@ public:
 static_assert( EngineConcept< EngMOCK< PlannerMOCK , StepperMOCK,  TaskMOCK > > , "EngMOCK does not meet concept requirments\n");
 
 
+class SorterTesting : public ::testing::Test {
+protected:
+    using mockEng = EngMOCK<PlannerMOCK, StepperMOCK, TaskMOCK>;
+    using mockEventFlags = EventGroupMOCK<EventGroupHandle_t, EventBits_t>;
+    using GenericSorter = Sorter<mockEventFlags, TaskMOCK, mockEng, SensorMOCK, mockEng, SensorMOCK>;
 
+    // =====================================================================
+    // UWAGA: Zmienne poniżej inicjalizują się kaskadowo z góry na dół.
+    // Nie zmieniaj ich kolejności, bo wywoła to błąd kompilacji.
+    // =====================================================================
 
+    EventGroupHandle_t eg{};
 
+    // --- EVENT FLAGS ---
+    // Inicjalizujemy opcjonal dokładnie tak samo jak przez 'auto' w Twoim kodzie, 
+    // a pod nim od razu tworzymy wygodną referencję.
+    etl::optional<mockEventFlags> tmp_eventFlags = mockEventFlags::create(eg, (BIT_DISKSSENSOR_INPUT | BIT_TRANSOPTOR_INPUT | BIT_SLIDE_ENGINE_FINISHED | BIT_DISK_ENGINE_FINISHED));
+    mockEventFlags& eventFlags = *tmp_eventFlags;
 
+    // --- SORTING TASK ---
+    etl::optional<TaskMOCK> tmp_sortingTask = TaskMOCK::create(nullptr, nullptr, 2048, 5);
+    TaskMOCK& sortingTask = *tmp_sortingTask;
+
+    // --- SLIDE ---
+    etl::optional<TaskMOCK> tmp_slideTask = TaskMOCK::create(nullptr, nullptr, 2048, 5);
+    TaskMOCK& slideTask = *tmp_slideTask;
+
+    etl::optional<StepperMOCK> tmp_slideStepper = StepperMOCK::create(0, 0);
+    StepperMOCK& slideStepper = *tmp_slideStepper;
+
+    etl::optional<PlannerMOCK> tmp_slidePlanner = PlannerMOCK::create();
+    PlannerMOCK& slidePlanner = *tmp_slidePlanner;
+
+    // EngMOCK używa wygenerowanych referencji, które są już bezpiecznie zainicjalizowane wyżej
+    etl::optional<mockEng> tmp_slideEng = mockEng::create(0, 0, slidePlanner, slideStepper, slideTask);
+    mockEng& slideEng = *tmp_slideEng;
+
+    SensorMOCK slideSensor{}; // O ile ten Mock ma konstruktor bezargumentowy
+
+    // --- DISKS ---
+    etl::optional<TaskMOCK> tmp_disksTask = TaskMOCK::create(nullptr, nullptr, 2048, 5);
+    TaskMOCK& disksTask = *tmp_disksTask;
+
+    etl::optional<PlannerMOCK> tmp_disksPlanner = PlannerMOCK::create();
+    PlannerMOCK& disksPlanner = *tmp_disksPlanner;
+
+    etl::optional<StepperMOCK> tmp_disksStepper = StepperMOCK::create(0, 0);
+    StepperMOCK& disksStepper = *tmp_disksStepper;
+
+    etl::optional<mockEng> tmp_disksEng = mockEng::create(0, 0, disksPlanner, disksStepper, disksTask);
+    mockEng& disksEng = *tmp_disksEng;
+
+    SensorMOCK disksSensor{};
+
+    // --- GŁÓWNY OBIEKT (Sorter) ---
+    // Możemy przechować go w etl::optional i zbudować dopiero wewnątrz konstruktora,
+    // gdzie wszystkie referencje (np. slideEng, disksEng) na pewno są już ustalone.
+    etl::optional< GenericSorter > sorter ;
+
+    SorterTesting() {
+        // Konstrukcja głównego obiektu Sortera w miejscu
+        sorter.emplace( eventFlags, sortingTask, slideEng, slideSensor, disksEng, disksSensor );
+    }
+};
+
+using SlideHomingTest = SorterTesting ;
+using DisksHomingTest = SorterTesting ;
+using SortingSingleCandyTest = SorterTesting ; 
 
 using ::testing::_;
 using ::testing::Return;
 
+TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
+    EXPECT_CALL( disksSensor , listenIT() ).Times(1);
 
-TEST( SorterHomingSlideTest , doesSensorDetect ){
-    using mockEng = EngMOCK< PlannerMOCK , StepperMOCK , TaskMOCK> ;
-    using mockEventFlags = EventGroupMOCK< EventGroupHandle_t, EventBits_t   > ; 
-    using GenericSorter  = Sorter< mockEventFlags , TaskMOCK , mockEng , SensorMOCK , mockEng , SensorMOCK >;
+    EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    EventGroupHandle_t eg{} ;
-    auto tmp_eventFlags  = mockEventFlags::create(  eg , ( BIT_COLORSENSOR_INPUT | BIT_TRANSOPTOR_INPUT  | BIT_SLIDE_ENGINE_FINISHED | BIT_DISK_ENGINE_FINISHED )  ) ;
-    auto& eventFlags = *tmp_eventFlags ; 
+    EXPECT_CALL( eventFlags , bitsWait( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
+        .WillRepeatedly( testing::Return( false )) ;
+    
 
-    auto tmp_sortingTask = TaskMOCK::create( nullptr , nullptr , 2048 , 5) ;
-    auto& sortingTask = *tmp_sortingTask ; 
+    
+    auto result = sorter->homingDisks() ;
 
-    auto tmp_slideTask  = TaskMOCK::create( nullptr ,nullptr ,  2048 , 5  ) ;
-    auto& slideTask = *tmp_slideTask ; 
+    EXPECT_EQ( result , sorterStatus::ERRORhomingDisks ) ;  
 
-
-    auto tmp_slideStepper  = StepperMOCK::create( 0 , 0 ) ;
-    auto& slideStepper = *tmp_slideStepper ; 
-
-    auto tmp_slidePlanner = PlannerMOCK::create() ;
-    auto& slidePlanner = *tmp_slidePlanner ;
-
-    auto tmp_slideEng= mockEng::create(  0 , 0 ,  slidePlanner ,slideStepper  , slideTask ) ;
-    auto& slideEng = *tmp_slideEng ;
-
-    auto slideSensor = SensorMOCK{};
+}  
 
 
-    auto tmp_disksTask = TaskMOCK::create( nullptr , nullptr , 2048 ,5) ;
-    auto& disksTask = *tmp_disksTask ;
+TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
+    EXPECT_CALL( slideSensor , listenIT() ).Times(1);
 
-    auto tmp_disksPlanner  = PlannerMOCK::create() ; 
-    auto& disksPlanner = *tmp_disksPlanner ;
+    EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    auto tmp_disksStepper = StepperMOCK::create( 0 , 0 ) ;
-    auto& disksStepper = *tmp_disksStepper ;
-
-    auto tmp_disksEng = mockEng::create(  0 , 0 ,  disksPlanner ,disksStepper  , disksTask   );
-    auto& disksEng = *tmp_disksEng ;
-
-    auto disksSensor = SensorMOCK{} ;
+    EXPECT_CALL( eventFlags , bitsWait( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
+        .WillRepeatedly( testing::Return( false )) ;
+    
 
 
-    auto sorter  = GenericSorter{ eventFlags , sortingTask , slideEng , slideSensor , disksEng , disksSensor }  ;
+    
+    auto result = sorter->homingSlide() ;
 
+    EXPECT_EQ( result , sorterStatus::ERRORhomingSlide) ;
+}
+
+TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
+    EXPECT_CALL( disksSensor , listenIT() ).Times(1);
+
+    EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
+
+    EXPECT_CALL( eventFlags , bitsWait( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
+        .WillOnce( testing::Return( false ))
+        .WillOnce( testing::Return( false ))
+        .WillOnce( testing::Return( true ))
+        .WillRepeatedly( testing::Return( false )) ;
+    
+
+    EXPECT_CALL( disksEng , stop() ).Times(1);
+
+    EXPECT_CALL( disksSensor , stopListeningIT() ).Times(1);
+    
+    auto result = sorter->homingDisks() ;
+
+    EXPECT_EQ( result , sorterStatus::OK ) ;  
+
+}  
+
+
+TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
     EXPECT_CALL( slideSensor , listenIT() ).Times(1);
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
@@ -230,39 +305,25 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
 
 
     
-    auto result = sorter.homingSlide() ;
+    auto result = sorter->homingSlide() ;
 
     EXPECT_EQ( result , sorterStatus::OK ) ;
 /*
-    sorterStatus homingDisks(){
-
-        slidePositionSensor.listenIT();
-        slideEngine.move( spinForever ) ;
-
-        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,   portMAX_DELAY )) {} 
-        
-        slideEngine.stop( ) ;
-        slidePositionSensor.stopListeningIT() ;
-
-
-
-        return sorterStatus::OK ; 
-
-    }
+  
     sorterStatus homingSlide(){
-            auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ;
+            auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( disksSensor.getSample() ) ;
             auto chamberColor = colorToNum( sample ) ;
 
-            colorSensor.listenIT() ; 
+            disksSensor.listenIT() ; 
 
             disksEngine.move( spinForever   ); 
 
-            while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , portMAX_DELAY )) {}
+            while ( !eventGroup.bitsWait(BIT_DISKSSENSOR_INPUT , portMAX_DELAY )) {}
             
 
             disksEngine.stop( ) ;
 
-            colorSensor.stopListeningIT() ;
+            disksSensor.stopListeningIT() ;
 
             return sorterStatus::OK ;
 
@@ -283,7 +344,7 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
                                                                     >
                                                                         ( pvParameter ) ;
         auto& [ instance , token ] = pair ;
-        auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , colorSensor , status  ] = instance ;
+        auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , disksSensor , status  ] = instance ;
 
         if ( status != sorterStatus::OK ) return ;
 
@@ -300,7 +361,7 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
         while ( ! FREETask::stopRequested( token ) ){
             disksEngine.move( fetchCandy ) ;
 
-            const auto& sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( colorSensor.getSample() ) ; 
+            const auto& sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( disksSensor.getSample() ) ; 
             auto candyColor = colorToNum( sample ) ;
 
             switch ( candyColor ){
@@ -343,7 +404,9 @@ TEST( SorterHomingSlideTest , doesSensorDetect ){
 
 
 */
-void app_main(){
+}
+
+extern "C" void app_main(){
 
     printf("Uruchamianie testow jednostkowych na systemie Linux...\n");
     

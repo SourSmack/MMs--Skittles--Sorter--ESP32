@@ -116,7 +116,7 @@ bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional
 
 
 
-    if (  eventFlags  = EventFlagsType::create( BIT_COLORSENSOR_INPUT   , BIT_TRANSOPTOR_INPUT , BIT_SLIDE_ENGINE_FINISHED  , BIT_DISK_ENGINE_FINISHED) ; 
+    if (  eventFlags  = EventFlagsType::create( BIT_DISKSSENSOR_INPUT   , BIT_TRANSOPTOR_INPUT , BIT_SLIDE_ENGINE_FINISHED  , BIT_DISK_ENGINE_FINISHED) ; 
         eventFlags == etl::nullopt )  
         return false ;
 
@@ -136,7 +136,7 @@ bool peripheralsCreation( UserHardwareConfiguration &peripherals , etl::optional
 
 
 
-    disksSensor = DisksSensorType::create( UART0_TX , UART0_RX  , eventFlags , BIT_COLORSENSOR_INPUT); 
+    disksSensor = DisksSensorType::create( UART0_TX , UART0_RX  , eventFlags , BIT_DISKSSENSOR_INPUT); 
     if ( disksSensor == etl::nullopt ) return false ;
     disksEngine = DisksEngineType::create( TOP_STEP_PIN , TOP_DIR_PIN , disksPlanner, disksStepper ) ;
     if ( disksEngine == etl::nullopt ) return false ; 

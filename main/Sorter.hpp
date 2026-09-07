@@ -19,7 +19,7 @@
 
 #define RX_BUFF_SIZE 1024
 
-#define BIT_COLORSENSOR_INPUT 1 << 0  
+#define BIT_DISKSSENSOR_INPUT 1 << 0  
 #define BIT_TRANSOPTOR_INPUT 1 << 1  
 #define BIT_SLIDE_ENGINE_FINISHED 1 << 2  
 #define BIT_DISK_ENGINE_FINISHED 1 << 3 
@@ -42,21 +42,21 @@
 #define makeIsr  true 
 #define enqueMove true 
 
-namespace cup {
-    constexpr moveBlock_t RED{ RED_CUP_DEGREE_POS  } ; 
-    constexpr moveBlock_t ORANGE{ ORANGE_CUP_DEGREE_POS  } ;
-    constexpr moveBlock_t YELLOW{  YELLOW_CUP_DEGREE_POS } ;
-    constexpr moveBlock_t PURPLE{ PURPLE_CUP_DEGREE_POS } ;
-    constexpr moveBlock_t GREEN{ GREEN_CUP_DEGREE_POS  } ; 
-    constexpr moveBlock_t UNKNOWN{ UNKNOWN_CUP_DEGREE_POS }; 
+constexpr const moveBlock_t cupsMoves[] =  {
+    moveBlock_t { RED_CUP_DEGREE_POS  } , 
+    moveBlock_t { ORANGE_CUP_DEGREE_POS  } ,
+    moveBlock_t {  YELLOW_CUP_DEGREE_POS } ,
+    moveBlock_t { PURPLE_CUP_DEGREE_POS } ,
+    moveBlock_t { GREEN_CUP_DEGREE_POS  } , 
+    moveBlock_t { UNKNOWN_CUP_DEGREE_POS } 
 
-}
+};
 
 constexpr moveBlock_t flushCandy{ 2 }; 
 constexpr moveBlock_t fetchCandy{ 1 }; 
 constexpr moveBlock_t spinForever{ 0 } ;
 
-enum  
+/*enum  
 {
     RED,
     ORANGE,
@@ -64,7 +64,7 @@ enum
     PURPLE,
     GREEN,
     UNKNOWN
-};
+};*/
 
 // create error codes that clears which&why peripherals malfuntion
 enum class sorterStatus{
@@ -107,7 +107,8 @@ public:
                                                 sortingTask( p_sortingTask )  , 
                                                 slideEngine( p_slideEngine ) , 
                                                 slidePositionSensor( p_slidePositionSensor) , 
-                                                colorSensor( p_colorSensor )
+                                                disksEngine( p_disksEngine ) ,
+                                                disksSensor( p_colorSensor )
                                                 {} 
 
 
@@ -124,25 +125,34 @@ public:
         return sorterStatus::OK ;
     }
 
-    sorterStatus sortSingleCandy( moveBlock_t cupAddress ){
+    sorterStatus sortSingleCandy( /*moveBlock_t cupAddress*/ ){
 
-        moveToCup( cupAddress ) ;        
-        move( flushCandy  );
+        disksEngine.move( fetchCandy  );
+        const auto candyColorIdx = disksSensor.getSample()  ; 
+
+        slideEngine.moveToCup( cupsMoves[ candyColorIdx ] ) ; 
+        disksEngine.move( flushCandy  );
+
         return sorterStatus::OK ;
     }
 
     sorterStatus homingDisks(){
 
-        colorSensor.listenIT() ; 
+        disksSensor.listenIT() ; 
 
         disksEngine.move( spinForever   ); 
-
-        while ( !eventGroup.bitsWait(BIT_COLORSENSOR_INPUT , EventFlagsType::MAX_DELAY )) {}
         
+
+        auto i{4} ;
+        while ( --i && !eventGroup.bitsWait( BIT_DISKSSENSOR_INPUT , EventFlagsType::MAX_DELAY )){}
+        if ( !i )  return sorterStatus::ERRORhomingDisks ;
+        
+
+       
 
         disksEngine.stop( ) ;
 
-        colorSensor.stopListeningIT() ;
+        disksSensor.stopListeningIT() ;
 
         return sorterStatus::OK ;
 
@@ -153,7 +163,11 @@ public:
         slidePositionSensor.listenIT();
         slideEngine.move( spinForever ) ;
 
-        while ( !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT,  EventFlagsType::MAX_DELAY )) {} 
+        auto i{4} ;
+        while ( --i && !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
+        if ( !i )  return sorterStatus::ERRORhomingSlide ;
+        
+
         
         slideEngine.stop( ) ;
         slidePositionSensor.stopListeningIT() ;
@@ -175,7 +189,7 @@ private:
     SlideSensorType &slidePositionSensor;
 
     DisksEngineType &disksEngine;
-    DisksSensorType &colorSensor ; 
+    DisksSensorType &disksSensor ; 
     
 
 
@@ -185,59 +199,27 @@ private:
     static void _sortingFunction(void *pvParameter){
         auto& pair = *static_cast< etl::pair<Sorter* , uint16_t > * >( pvParameter ) ;
         auto& [ instance , token ] = pair ;
-        auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , colorSensor , status  ] = instance ;
+        auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , disksSensor , status  ] = instance ;
+
+        static bool isHoomed{ false } ;
+
+        if ( !isHoomed){
+            if ( instance.homingSlide() != sorterStatus::OK){
+                status = sorterStatus::ERRORslideEngine ; 
+                return ;
+                } 
+            if ( instance.homingDisks() != sorterStatus::OK ) {
+                status = sorterStatus::ERRORdisksEngine; 
+                return ; 
+                }
+            isHoomed = true; 
+        }
 
         if ( status != sorterStatus::OK ) return ;
 
-        /*if ( instance.homingSlide() != sorterStatus::OK){
-            status = sorterStatus::ERRORslideEngine ; 
-            return ;
-        } 
-        if ( instance.homingDisks() != sorterStatus::OK ) {
-            status = sorterStatus::ERRORdisksEngine; 
-            return ; 
-        }
-*/
 
         while ( ! FREETask::stopRequested( token ) ){
-            disksEngine.move( fetchCandy ) ;
-
-            const auto candyColorIdx = colorSensor.getSample()  ; 
-            
-
-            switch ( candyColorIdx ){
-                case   RED  : 
-                    slideEngine.moveToCup( cup::RED ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   ORANGE  :
-                    slideEngine.moveToCup( cup::ORANGE ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   YELLOW  :
-                    slideEngine.moveToCup( cup::YELLOW ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   PURPLE  :
-                    slideEngine.moveToCup( cup::PURPLE ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   GREEN  : 
-                    slideEngine.moveToCup( cup::GREEN ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                default :
-                    slideEngine.moveToCup( cup::UNKNOWN ) ; 
-                    disksEngine.move( flushCandy  );
-                    break ;
-            }
-
-
+            instance.sortSingleCandy() ;
         }
 
 
