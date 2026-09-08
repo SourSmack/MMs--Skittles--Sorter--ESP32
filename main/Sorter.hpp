@@ -68,14 +68,14 @@ constexpr moveBlock_t spinForever{ 0 } ;
 
 // create error codes that clears which&why peripherals malfuntion
 enum class sorterStatus{
-    OK , 
-    busy , 
-    ERRORslideEngine,
-    ERRORdisksEngine,
-    ERRORslideSensor,
-    ERRORdisksSensor,
-    ERRORhomingDisks,
-    ERRORhomingSlide
+    OK  = 1 << 0, 
+    busy = 1 << 1 , 
+    ERRORslideEngine = 1 << 2, 
+    ERRORdisksEngine = 1 << 3,
+    ERRORslideSensor = 1 << 4,
+    ERRORdisksSensor = 1 << 5,
+    ERRORhomingDisks = 1 << 6,
+    ERRORhomingSlide = 1 << 7,
 
 };
 
@@ -138,21 +138,26 @@ public:
 
     sorterStatus homingDisks(){
 
-        disksSensor.listenIT() ; 
+        sorterStatus ERR;
+        if ( !disksSensor.listenIT() ) return sorterStatus::ERRORdisksSensor ;  
 
         disksEngine.move( spinForever   ); 
         
 
         auto i{4} ;
         while ( --i && !eventGroup.bitsWait( BIT_DISKSSENSOR_INPUT , EventFlagsType::MAX_DELAY )){}
-        if ( !i )  return sorterStatus::ERRORhomingDisks ;
+        if ( !i ){
+            disksEnginel.stop() ;
+            ERR.ERRORdisksEngine = true 
+            return  ERR  ;
+        }  
         
 
        
 
-        disksEngine.stop( ) ;
+        if ( !disksEngine.stop( ) ) return sorterStatus::ERRORdisksEngine;
 
-        disksSensor.stopListeningIT() ;
+        if ( !disksSensor.stopListeningIT() ) return sorterStatus::ERRORdisksSensor;
 
         return sorterStatus::OK ;
 
@@ -160,12 +165,16 @@ public:
 
     sorterStatus homingSlide(){
 
+        sorterStatus ERR ;
         slidePositionSensor.listenIT();
         slideEngine.move( spinForever ) ;
 
         auto i{4} ;
         while ( --i && !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
-        if ( !i )  return sorterStatus::ERRORhomingSlide ;
+        if ( !i ){
+
+
+        }  return sorterStatus::ERRORhomingSlide ;
         
 
         
