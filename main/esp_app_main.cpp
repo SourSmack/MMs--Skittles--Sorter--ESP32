@@ -43,11 +43,11 @@ extern "C" void app_main(void)
     auto &sorter  = *opt_sorter ;
 
     sorter.startSorting() ;
-    auto status{ sorterStatus::OK } ;
+    auto status{ sorterErrFlags::OK } ;
     while (true){ 
 
         status = sorter.getStatus() ;
-        if ( status == sorterStatus::OK  || status == sorterStatus::busy ){
+        if ( status == sorterErrFlags::OK  || status == sorterErrFlags::busy ){
             
             continue ; 
         }

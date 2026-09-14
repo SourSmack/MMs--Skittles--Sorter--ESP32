@@ -231,6 +231,8 @@ using SortingSingleCandyTest = SorterTesting ;
 using ::testing::_;
 using ::testing::Return;
 
+
+
 TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
     EXPECT_CALL( disksSensor , listenIT() ).Times(1);
 
@@ -243,7 +245,7 @@ TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
     
     auto result = sorter->homingDisks() ;
 
-    EXPECT_EQ( result , sorterStatus::ERRORhomingDisks ) ;  
+    EXPECT_EQ( result , sorterErrFlags::ERRORhomingDisks ) ;  
 
 }  
 
@@ -261,7 +263,7 @@ TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
     
     auto result = sorter->homingSlide() ;
 
-    EXPECT_EQ( result , sorterStatus::ERRORhomingSlide) ;
+    EXPECT_EQ( result , sorterErrFlags::ERRORhomingSlide) ;
 }
 
 TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
@@ -282,7 +284,7 @@ TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
     
     auto result = sorter->homingDisks() ;
 
-    EXPECT_EQ( result , sorterStatus::OK ) ;  
+    EXPECT_EQ( result , sorterErrFlags::OK ) ;  
 
 }  
 
@@ -307,10 +309,10 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
     
     auto result = sorter->homingSlide() ;
 
-    EXPECT_EQ( result , sorterStatus::OK ) ;
+    EXPECT_EQ( result , sorterErrFlags::OK ) ;
 /*
   
-    sorterStatus homingSlide(){
+    sorterErrFlags homingSlide(){
             auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( disksSensor.getSample() ) ;
             auto chamberColor = colorToNum( sample ) ;
 
@@ -325,18 +327,18 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
 
             disksSensor.stopListeningIT() ;
 
-            return sorterStatus::OK ;
+            return sorterErrFlags::OK ;
 
         }
     void startSorting() {
         sortingTask.start() ; 
     } 
 
-    sorterStatus getStatus()const{ return status ; }
+    sorterErrFlags getStatus()const{ return status ; }
 
-    sorterStatus stopSorting(){ 
+    sorterErrFlags stopSorting(){ 
         sortingTask.stop() ; 
-        return sorterStatus::OK ;
+        return sorterErrFlags::OK ;
     }
     static void _sortingFunction(void *pvParameter){
         auto& pair = *static_cast< 
@@ -346,14 +348,14 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
         auto& [ instance , token ] = pair ;
         auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , disksSensor , status  ] = instance ;
 
-        if ( status != sorterStatus::OK ) return ;
+        if ( status != sorterErrFlags::OK ) return ;
 
-        if ( instance.homingSlide() != sorterStatus::OK){
-            status = sorterStatus::ERRORslideEngine ; 
+        if ( instance.homingSlide() != sorterErrFlags::OK){
+            status = sorterErrFlags::ERRORslideEngine ; 
             return ;
         } 
-        if ( instance.homingDisks() != sorterStatus::OK ) {
-            status = sorterStatus::ERRORdisksEngine; 
+        if ( instance.homingDisks() != sorterErrFlags::OK ) {
+            status = sorterErrFlags::ERRORdisksEngine; 
             return ; 
         }
 

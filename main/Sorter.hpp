@@ -67,17 +67,46 @@ constexpr moveBlock_t spinForever{ 0 } ;
 };*/
 
 // create error codes that clears which&why peripherals malfuntion
-enum class sorterStatus{
-    OK  = 1 << 0, 
-    busy = 1 << 1 , 
-    ERRORslideEngine = 1 << 2, 
-    ERRORdisksEngine = 1 << 3,
-    ERRORslideSensor = 1 << 4,
-    ERRORdisksSensor = 1 << 5,
-    ERRORhomingDisks = 1 << 6,
-    ERRORhomingSlide = 1 << 7,
+enum class  ErrCode : uint16_t {
+    
+    bool OK  = 1 << 0 ;
+    bool busy = 1 << 1 ;
+    bool slideEngine = 1 << 2 ;
+    bool disksEngine = 1 << 3 ;
+    bool slideSensor = 1 << 4 ;
+    bool disksSensor = 1 << 5 ;
+    bool homingDisks = 1 << 6 ;
+    bool homingSlide = 1 << 7 ;
+    bool eventGroup  = 1 << 8 ;
 
+    friend sorterErrFlags operator|( const  sorterErrFlags a  , const sorterErrFlags b  ){
+        return  static_cast< sorterErrFlags >( 
+            static_cast< uint16_t>( a ) | static_cast< uint16_t( b ) ) ;
+    }
 };
+
+union sorterErrFlags{
+    struct{
+        bool OK  : 1 = false ;
+        bool busy : 1 = false ;
+        bool ERRORslideEngine : 1 = false ;
+        bool ERRORdisksEngine : 1 = false ;
+        bool ERRORslideSensor : 1 = false ;
+        bool ERRORdisksSensor : 1 = false ;
+        bool ERRORhomingDisks : 1 = false ;
+        bool ERRORhomingSlide : 1 = false ;
+    };
+
+    ErrCode rawMask ;
+
+    constexpr sorterErrFlags(): rawMask( ErrCode::OK ){}
+    // implicit conversion 
+    constexpr sorterErrFlags( ErrCode err ): rawMask( err ){} 
+
+    constexpr operator bool(){
+        return rawMask != ErrCode::OK ;
+    }
+}
 
 struct UserHardwareConfiguration ; 
 
@@ -118,14 +147,14 @@ public:
         sortingTask.start() ; 
     } 
 
-    sorterStatus getStatus()const{ return status ; }
+    sorterErrFlags getStatus()const{ return status ; }
 
-    sorterStatus stopSorting(){ 
+    sorterErrFlags stopSorting(){ 
         sortingTask.stop() ; 
-        return sorterStatus::OK ;
+        return ErrCode::OK ;
     }
 
-    sorterStatus sortSingleCandy( /*moveBlock_t cupAddress*/ ){
+    sorterErrFlags sortSingleCandy( /*moveBlock_t cupAddress*/ ){
 
         disksEngine.move( fetchCandy  );
         const auto candyColorIdx = disksSensor.getSample()  ; 
@@ -133,13 +162,13 @@ public:
         slideEngine.moveToCup( cupsMoves[ candyColorIdx ] ) ; 
         disksEngine.move( flushCandy  );
 
-        return sorterStatus::OK ;
+        return ErrCode::OK ;
     }
 
-    sorterStatus homingDisks(){
+    sorterErrFlags homingDisks(){
 
-        sorterStatus ERR;
-        if ( !disksSensor.listenIT() ) return sorterStatus::ERRORdisksSensor ;  
+
+        if ( !disksSensor.listenIT() ) return ErrCode::disksSensor ;  
 
         disksEngine.move( spinForever   ); 
         
@@ -147,43 +176,43 @@ public:
         auto i{4} ;
         while ( --i && !eventGroup.bitsWait( BIT_DISKSSENSOR_INPUT , EventFlagsType::MAX_DELAY )){}
         if ( !i ){
-            disksEnginel.stop() ;
-            ERR.ERRORdisksEngine = true 
-            return  ERR  ;
+            if ( !disksEngine.stop() ) 
+                return ErrCode::eventGroup | ErrCode::disksEngine ;
+            return  ErrCode::eventGroup  ;
         }  
         
 
        
 
-        if ( !disksEngine.stop( ) ) return sorterStatus::ERRORdisksEngine;
+        if ( !disksEngine.stop( ) ) return ErrCode::disksEngine;
 
-        if ( !disksSensor.stopListeningIT() ) return sorterStatus::ERRORdisksSensor;
+        if ( !disksSensor.stopListeningIT() ) return ErrCode::disksSensor;
 
-        return sorterStatus::OK ;
+        return Errcode::OK ;
 
     }
 
-    sorterStatus homingSlide(){
+    sorterErrFlags homingSlide(){
 
-        sorterStatus ERR ;
-        slidePositionSensor.listenIT();
+
+        if ( !slidePositionSensor.listenIT()) return ErrCode::slideSensor ;
         slideEngine.move( spinForever ) ;
 
         auto i{4} ;
         while ( --i && !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
         if ( !i ){
+            if ( !slideEngine.stop() ) return ErrCode::eventGroup | ErrCode::slideEngine ;
 
-
-        }  return sorterStatus::ERRORhomingSlide ;
+        }  return ErrCode::eventGroup ;
         
 
         
-        slideEngine.stop( ) ;
-        slidePositionSensor.stopListeningIT() ;
+        if ( !slideEngine.stop( ) ) return  ErrCode::slideEngine ;
+        if ( !slidePositionSensor.stopListeningIT() ) return  ErrCode::slideSensor ;
 
 
 
-        return sorterStatus::OK ; 
+        return ErrCode::OK ; 
 
     }
 
@@ -202,7 +231,7 @@ private:
     
 
 
-    sorterStatus status{ sorterStatus::OK }    ; 
+    sorterErrFlags status  ; 
     
 
     static void _sortingFunction(void *pvParameter){
@@ -213,18 +242,18 @@ private:
         static bool isHoomed{ false } ;
 
         if ( !isHoomed){
-            if ( instance.homingSlide() != sorterStatus::OK){
-                status = sorterStatus::ERRORslideEngine ; 
+            if ( instance.homingSlide() != sorterErrFlags.OK){
+                status = sorterErrFlags.slideEngine ; 
                 return ;
                 } 
-            if ( instance.homingDisks() != sorterStatus::OK ) {
-                status = sorterStatus::ERRORdisksEngine; 
+            if ( instance.homingDisks() != sorterErrFlags.OK ) {
+                status = sorterErrFlags.disksEngine; 
                 return ; 
                 }
             isHoomed = true; 
         }
 
-        if ( status != sorterStatus::OK ) return ;
+        if ( status != sorterErrFlags.OK ) return ;
 
 
         while ( ! FREETask::stopRequested( token ) ){
