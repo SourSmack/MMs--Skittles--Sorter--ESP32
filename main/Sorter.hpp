@@ -65,36 +65,36 @@ constexpr moveBlock_t spinForever{ 0 } ;
     GREEN,
     UNKNOWN
 };*/
-
+union sorterErrFlags ;
 // create error codes that clears which&why peripherals malfuntion
 enum class  ErrCode : uint16_t {
     
-    bool OK  = 1 << 0 ;
-    bool busy = 1 << 1 ;
-    bool slideEngine = 1 << 2 ;
-    bool disksEngine = 1 << 3 ;
-    bool slideSensor = 1 << 4 ;
-    bool disksSensor = 1 << 5 ;
-    bool homingDisks = 1 << 6 ;
-    bool homingSlide = 1 << 7 ;
-    bool eventGroup  = 1 << 8 ;
+    OK          = 0 ,
+    busy        = 1 << 0 ,
+    slideEngine = 1 << 1 ,
+    disksEngine = 1 << 2 ,
+    slideSensor = 1 << 3 ,
+    disksSensor = 1 << 4 ,
+    homingDisks = 1 << 5 ,
+    homingSlide = 1 << 6 ,
+    eventGroup  = 1 << 7 
 
-    friend sorterErrFlags operator|( const  sorterErrFlags a  , const sorterErrFlags b  ){
-        return  static_cast< sorterErrFlags >( 
-            static_cast< uint16_t>( a ) | static_cast< uint16_t( b ) ) ;
-    }
 };
+constexpr ErrCode operator|( const  ErrCode a  , const ErrCode b  ){
+    return  static_cast< ErrCode >( 
+        static_cast< uint16_t>( a ) | static_cast< uint16_t>( b ) ) ;
+}
 
 union sorterErrFlags{
     struct{
-        bool OK  : 1 = false ;
-        bool busy : 1 = false ;
-        bool ERRORslideEngine : 1 = false ;
-        bool ERRORdisksEngine : 1 = false ;
-        bool ERRORslideSensor : 1 = false ;
-        bool ERRORdisksSensor : 1 = false ;
-        bool ERRORhomingDisks : 1 = false ;
-        bool ERRORhomingSlide : 1 = false ;
+        uint16_t busy : 1 ;
+        uint16_t slideEngine : 1 ;
+        uint16_t disksEngine : 1 ;
+        uint16_t slideSensor : 1 ;
+        uint16_t disksSensor : 1 ;
+        uint16_t homingDisks : 1 ;
+        uint16_t homingSlide : 1 ;
+        uint16_t eventGroup  : 1 ;
     };
 
     ErrCode rawMask ;
@@ -103,10 +103,16 @@ union sorterErrFlags{
     // implicit conversion 
     constexpr sorterErrFlags( ErrCode err ): rawMask( err ){} 
 
-    constexpr operator bool(){
+    constexpr   bool operator!=( const ErrCode err)const {
+        return rawMask != err ; 
+    }
+    constexpr  bool operator==( const ErrCode err)const {
+        return rawMask == err ; 
+    }
+    constexpr explicit  operator bool()const {
         return rawMask != ErrCode::OK ;
     }
-}
+};
 
 struct UserHardwareConfiguration ; 
 
@@ -188,7 +194,7 @@ public:
 
         if ( !disksSensor.stopListeningIT() ) return ErrCode::disksSensor;
 
-        return Errcode::OK ;
+        return ErrCode::OK ;
 
     }
 
@@ -201,9 +207,10 @@ public:
         auto i{4} ;
         while ( --i && !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
         if ( !i ){
-            if ( !slideEngine.stop() ) return ErrCode::eventGroup | ErrCode::slideEngine ;
-
-        }  return ErrCode::eventGroup ;
+            if ( !slideEngine.stop() ) 
+                return ErrCode::eventGroup | ErrCode::slideEngine ;
+            return ErrCode::eventGroup ;
+        }  
         
 
         
@@ -242,18 +249,18 @@ private:
         static bool isHoomed{ false } ;
 
         if ( !isHoomed){
-            if ( instance.homingSlide() != sorterErrFlags.OK){
-                status = sorterErrFlags.slideEngine ; 
+            if ( instance.homingSlide() != ErrCode::OK){
+                status = ErrCode::homingSlide ; 
                 return ;
                 } 
-            if ( instance.homingDisks() != sorterErrFlags.OK ) {
-                status = sorterErrFlags.disksEngine; 
+            if ( instance.homingDisks() != ErrCode::OK ){
+                status = ErrCode::homingDisks; 
                 return ; 
                 }
             isHoomed = true; 
         }
 
-        if ( status != sorterErrFlags.OK ) return ;
+        if ( status != ErrCode::OK ) return ;
 
 
         while ( ! FREETask::stopRequested( token ) ){

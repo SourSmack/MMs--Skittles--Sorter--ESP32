@@ -18,7 +18,7 @@ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "Sorter.hpp"
-
+#include <format>
 template < class T  , class N > 
 class  EventGroupMOCK {
 public:
@@ -224,6 +224,30 @@ protected:
     }
 };
 
+inline std::ostream& operator<<(std::ostream& os, const sorterErrFlags& flags) {
+    // Wypisujemy rawMask jako liczbę szesnastkową dla łatwego czytania bitów
+    std::string names[] = {
+    "busy",        
+    "slideEngine", 
+    "disksEngine", 
+    "slideSensor", 
+    "disksSensor", 
+    "homingDisks", 
+    "homingSlide", 
+    "eventGroup"  
+    };
+
+    if ( !static_cast<uint16_t>( flags.rawMask ) ){
+        os << " ErrCode::OK " <<  std::endl ;
+    }
+    for ( auto i{0} ; i < 32 ; ++i){
+        if ( static_cast<uint16_t>( flags.rawMask ) & ( 1 << i) ){
+            os << "ErrCode::" << names[i] << std::endl  ;
+        }
+    }
+    return os;
+}
+
 using SlideHomingTest = SorterTesting ;
 using DisksHomingTest = SorterTesting ;
 using SortingSingleCandyTest = SorterTesting ; 
@@ -234,40 +258,41 @@ using ::testing::Return;
 
 
 TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
-    EXPECT_CALL( disksSensor , listenIT() ).Times(1);
+    EXPECT_CALL( disksSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
     EXPECT_CALL( eventFlags , bitsWait( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillRepeatedly( testing::Return( false )) ;
-    
+    EXPECT_CALL( disksEng , stop() ).Times(1).WillOnce( testing::Return( true )); 
 
     
     auto result = sorter->homingDisks() ;
 
-    EXPECT_EQ( result , sorterErrFlags::ERRORhomingDisks ) ;  
+    EXPECT_EQ( result , ErrCode::eventGroup ) ;  
 
 }  
 
 
 TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
-    EXPECT_CALL( slideSensor , listenIT() ).Times(1);
+    EXPECT_CALL( slideSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
     EXPECT_CALL( eventFlags , bitsWait( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillRepeatedly( testing::Return( false )) ;
     
+    EXPECT_CALL( slideEng , stop() ).Times(1).WillOnce( testing::Return( true )); 
 
 
     
     auto result = sorter->homingSlide() ;
 
-    EXPECT_EQ( result , sorterErrFlags::ERRORhomingSlide) ;
+    EXPECT_EQ( result , ErrCode::eventGroup );
 }
 
 TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
-    EXPECT_CALL( disksSensor , listenIT() ).Times(1);
+    EXPECT_CALL( disksSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
@@ -278,19 +303,19 @@ TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
         .WillRepeatedly( testing::Return( false )) ;
     
 
-    EXPECT_CALL( disksEng , stop() ).Times(1);
+    EXPECT_CALL( disksEng , stop() ).Times(1).WillOnce( testing::Return( true ));
 
-    EXPECT_CALL( disksSensor , stopListeningIT() ).Times(1);
+    EXPECT_CALL( disksSensor , stopListeningIT() ).Times(1).WillOnce( testing::Return( true ));
     
     auto result = sorter->homingDisks() ;
 
-    EXPECT_EQ( result , sorterErrFlags::OK ) ;  
+    EXPECT_EQ( result , ErrCode::OK ) ;  
 
 }  
 
 
 TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
-    EXPECT_CALL( slideSensor , listenIT() ).Times(1);
+    EXPECT_CALL( slideSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
@@ -301,15 +326,15 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
         .WillRepeatedly( testing::Return( false )) ;
     
 
-    EXPECT_CALL( slideEng , stop() ).Times(1);
+    EXPECT_CALL( slideEng , stop() ).Times(1).WillOnce( testing::Return( true ));
 
-    EXPECT_CALL( slideSensor , stopListeningIT() ).Times(1);
+    EXPECT_CALL( slideSensor , stopListeningIT() ).Times(1).WillOnce( testing::Return( true ));
 
 
     
     auto result = sorter->homingSlide() ;
 
-    EXPECT_EQ( result , sorterErrFlags::OK ) ;
+    EXPECT_EQ( result , ErrCode::OK ) ;
 /*
   
     sorterErrFlags homingSlide(){
@@ -400,7 +425,6 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
 
 
         }
-
 
     }
 
