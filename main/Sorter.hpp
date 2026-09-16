@@ -6,7 +6,7 @@
 
 
 
-
+#include <magic_enum.hpp>
 #include "etl/optional.h"
 #include "etl/string.h"
 
@@ -42,7 +42,8 @@
 #define makeIsr  true 
 #define enqueMove true 
 
-constexpr const moveBlock_t cupsMoves[] =  {
+// encapsulte this logic into one object 
+constexpr  etl::array<moveBlock_t , 6> cupsMoves{ 
     moveBlock_t { RED_CUP_DEGREE_POS  } , 
     moveBlock_t { ORANGE_CUP_DEGREE_POS  } ,
     moveBlock_t {  YELLOW_CUP_DEGREE_POS } ,
@@ -51,6 +52,7 @@ constexpr const moveBlock_t cupsMoves[] =  {
     moveBlock_t { UNKNOWN_CUP_DEGREE_POS } 
 
 };
+auto UNKNOWN_CUP_IDX = cupsMoves.size() - 1 ;
 
 constexpr moveBlock_t flushCandy{ 2 }; 
 constexpr moveBlock_t fetchCandy{ 1 }; 
@@ -65,36 +67,29 @@ constexpr moveBlock_t spinForever{ 0 } ;
     GREEN,
     UNKNOWN
 };*/
-union sorterErrFlags ;
+#define SORTER_ERR_FLAGS_FUNCTION_GENERATOR(X) \
+    X(busy,        0) \
+    X(slideEngine, 1) \
+    X(disksEngine, 2) \
+    X(slideSensor, 3) \
+    X(disksSensor, 4) \
+    X(homingDisks, 5) \
+    X(homingSlide, 6) \
+    X(eventGroup,  7)
+
+#define GENERATE_ENUM_MEMBER(name, bit) name = (1 << bit),
+
 // create error codes that clears which&why peripherals malfuntion
 enum class  ErrCode : uint16_t {
     
     OK          = 0 ,
-    busy        = 1 << 0 ,
-    slideEngine = 1 << 1 ,
-    disksEngine = 1 << 2 ,
-    slideSensor = 1 << 3 ,
-    disksSensor = 1 << 4 ,
-    homingDisks = 1 << 5 ,
-    homingSlide = 1 << 6 ,
-    eventGroup  = 1 << 7 
-
+    SORTER_ERR_FLAGS_FUNCTION_GENERATOR( GENERATE_ENUM_MEMBER)
+    MAX 
 };
-constexpr ErrCode operator|( const  ErrCode a  , const ErrCode b  ){
-    return  static_cast< ErrCode >( 
-        static_cast< uint16_t>( a ) | static_cast< uint16_t>( b ) ) ;
-}
-
+#define GENERATE_STRUCT_MEMBER(name, bit) uint16_t name : 1;
 union sorterErrFlags{
     struct{
-        uint16_t busy : 1 ;
-        uint16_t slideEngine : 1 ;
-        uint16_t disksEngine : 1 ;
-        uint16_t slideSensor : 1 ;
-        uint16_t disksSensor : 1 ;
-        uint16_t homingDisks : 1 ;
-        uint16_t homingSlide : 1 ;
-        uint16_t eventGroup  : 1 ;
+        SORTER_ERR_FLAGS_FUNCTION_GENERATOR( GENERATE_STRUCT_MEMBER ) 
     };
 
     ErrCode rawMask ;
@@ -113,6 +108,11 @@ union sorterErrFlags{
         return rawMask != ErrCode::OK ;
     }
 };
+
+constexpr ErrCode operator|( const  ErrCode a  , const ErrCode b  ){
+    return  static_cast< ErrCode >( 
+        static_cast< uint16_t>( a ) | static_cast< uint16_t>( b ) ) ;
+}
 
 struct UserHardwareConfiguration ; 
 
@@ -161,11 +161,12 @@ public:
     }
 
     sorterErrFlags sortSingleCandy( /*moveBlock_t cupAddress*/ ){
-
+        
         disksEngine.move( fetchCandy  );
-        const auto candyColorIdx = disksSensor.getSample()  ; 
+        const auto rawIdx = disksSensor.getSample()  ; 
+        const auto safeIdx = ( rawIdx <  UNKNOWN_CUP_IDX ) ? rawIdx : UNKNOWN_CUP_IDX ; 
 
-        slideEngine.moveToCup( cupsMoves[ candyColorIdx ] ) ; 
+        slideEngine.moveToCup( cupsMoves[ safeIdx ] ) ; 
         disksEngine.move( flushCandy  );
 
         return ErrCode::OK ;

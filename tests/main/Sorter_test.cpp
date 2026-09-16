@@ -19,6 +19,7 @@ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test
 #include "freertos/event_groups.h"
 #include "Sorter.hpp"
 #include <format>
+#include <random>
 template < class T  , class N > 
 class  EventGroupMOCK {
 public:
@@ -90,7 +91,7 @@ public:
 
     MOCK_METHOD( ( bool ) , turnOn , () );
     MOCK_METHOD( ( bool ) , turnOff , () );
-    MOCK_METHOD( ( int ) , getSample , () , ( const ) );
+    MOCK_METHOD( ( uint32_t ) , getSample , () , ( const ) );
     MOCK_METHOD( ( bool ) , stopListeningIT , () );
     MOCK_METHOD( ( bool ) , listenIT , () );
     
@@ -251,13 +252,52 @@ inline std::ostream& operator<<(std::ostream& os, const sorterErrFlags& flags) {
 using SlideHomingTest = SorterTesting ;
 using DisksHomingTest = SorterTesting ;
 using SortingSingleCandyTest = SorterTesting ; 
-
+using startSortingTest = SorterTesting ; 
+using sortSingleCandyTEST = SorterTesting ;
 using ::testing::_;
 using ::testing::Return;
 
+TEST_F( sortSingleCandyTEST , HappyPath){
+    testing::InSequence seq ;
+
+    auto testingValue{ 0 } ;
+    EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_, testing::_)).Times(1);
+
+    EXPECT_CALL( disksSensor , getSample() ).Times(1).WillOnce( testing::Return( testingValue ) );
+
+    EXPECT_CALL( slideEng , moveToCupImpl( cupsMoves[ testingValue ] , testing::_, testing::_)).Times(1) ;
+
+    EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_, testing::_)).Times(1) ;
+
+    auto result = sorter->sortSingleCandy() ; 
+
+    EXPECT_EQ( result , ErrCode::OK ) ;
+
+/*    sorterErrFlags sortSingleCandy(  ){
+        
+        disksEngine.move( fetchCandy  );
+        const auto rawIdx = disksSensor.getSample()  ; 
+        const auto safeIdx = ( rawIdx <  UNKNOWN_CUP_IDX ) ? rawIdx : UNKNOWN_CUP_IDX ; 
+
+        slideEngine.moveToCup( cupsMoves[ safeIdx ] ) ; 
+        disksEngine.move( flushCandy  );
+
+        return ErrCode::OK ;
+    }
+*/
+
+}
+TEST_F( startSortingTest , HappyPath){
+    testing::InSequence sq ;
+    EXPECT_CALL( sortingTask ,   start() ).Times(1);
+
+    sorter->startSorting() ;
+}
 
 
 TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
+    testing::InSequence sq ;
+
     EXPECT_CALL( disksSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
@@ -275,6 +315,8 @@ TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
 
 
 TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
+
+    testing::InSequence sq ;
     EXPECT_CALL( slideSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
@@ -292,6 +334,8 @@ TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
 }
 
 TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
+    testing::InSequence sq ;
+
     EXPECT_CALL( disksSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
@@ -315,6 +359,8 @@ TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
 
 
 TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
+
+    testing::InSequence sq ;
     EXPECT_CALL( slideSensor , listenIT() ).Times(1).WillOnce( testing::Return( true ));
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);

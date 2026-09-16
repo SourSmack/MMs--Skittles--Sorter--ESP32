@@ -104,7 +104,7 @@ concept SensorConcept =
 
     { Sensor.turnOn()}              -> std::same_as< bool > ;
     { Sensor.turnOff()}             -> std::same_as< bool > ;
-    { ConstSensor.getSample() }     -> std::same_as< int > ; 
+    { ConstSensor.getSample() }     -> std::same_as< uint32_t > ; 
     { Sensor.stopListeningIT()}     -> std::same_as< bool >   ;
     { Sensor.listenIT()}            -> std::same_as< bool >   ;
 };

@@ -6,6 +6,14 @@ idf_component_register(
                  "../../main"
     REQUIRES freertos interCommunication libs
 )
+include(FetchContent)
+FetchContent_Declare(
+  magic_enum 
+  GIT_REPOSITORY https://github.com/Neargye/magic_enum
+  GIT_TAG        v0.9.5 # Stabilna wersja
+)
+
+FetchContent_MakeAvailable(magic_enum)
 
 # 2. Pobieranie GTest / GMock
 include(FetchContent)
@@ -25,4 +33,4 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # 3. Linkowanie pobranego GMock do naszego komponentu testowego
-target_link_libraries(${COMPONENT_LIB} PRIVATE gtest gmock)
+target_link_libraries(${COMPONENT_LIB} PRIVATE gtest gmock magic_enum::magic_enum)

@@ -44,6 +44,7 @@ struct moveBlock_t
         }
 
     } 
+    bool operator==(const moveBlock_t&) const = default;
 };
 
 
