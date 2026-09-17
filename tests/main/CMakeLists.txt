@@ -1,6 +1,7 @@
 idf_component_register(
-    SRCS "Sorter_test.cpp" 
+    SRCS "Sorter_test.cpp" "Nema_test2.cpp" 
          #"Nema_test.cpp"
+         "../../components/motorControl/include/Nema.hpp"
          "../../main/Sorter.hpp"
     INCLUDE_DIRS "." 
                  "../../main"

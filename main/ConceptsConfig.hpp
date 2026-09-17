@@ -64,7 +64,7 @@ concept StepperConcept  = requires( T Stepper , const T ConstStepper ,
                                     const motionBlock_t  motion ,
                                     const uint16_t step , const uint16_t dir ) { 
 
-    requires ! std::default_initializable<T> ; 
+    //requires ! std::default_initializable<T> ; 
     { Stepper.enqueue(   motion) } -> std::same_as<void > ;
     
     { Stepper. stop() }   -> std::same_as< void > ;

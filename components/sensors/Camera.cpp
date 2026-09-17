@@ -107,7 +107,7 @@ int Camera::init(pc_uart_config_t &uartCfg, uart_port_t  uartNm , uint16_t txPin
 }
 
 
-const void*  Camera::getSample()const  { return static_cast< const void* >( &last_word )   ; } 
+uint32_t  Camera::getSample()const  { return last_word    ; } 
 
 
 bool Camera::stopListeningIT(){

@@ -49,7 +49,7 @@ public:
     bool listenIT()override;
     bool turnOn()override;
     bool turnOff()override;
-    const void* getSample()const override;
+    int getSample()const override;
 
 
 

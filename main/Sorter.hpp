@@ -58,15 +58,6 @@ constexpr moveBlock_t flushCandy{ 2 };
 constexpr moveBlock_t fetchCandy{ 1 }; 
 constexpr moveBlock_t spinForever{ 0 } ;
 
-/*enum  
-{
-    RED,
-    ORANGE,
-    YELLOW,
-    PURPLE,
-    GREEN,
-    UNKNOWN
-};*/
 #define SORTER_ERR_FLAGS_FUNCTION_GENERATOR(X) \
     X(busy,        0) \
     X(slideEngine, 1) \
@@ -130,11 +121,10 @@ template <
 class Sorter{
 
 public:
-    Sorter() = delete ;
 
 
     Sorter( EventFlagsType  &p_eventGroup , 
-            TaskType &p_sortingTask  , 
+            TaskType        &p_sortingTask  , 
             SlideEngineType &p_slideEngine , 
             SlideSensorType &p_slidePositionSensor , 
             DisksEngineType &p_disksEngine , 

@@ -26,9 +26,21 @@ typedef enum {
 }err_code_t;
 
 
-template < PlannerConcept T , StepperConcept N , TaskConcept M > 
+template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 
 class Nema  
 {
+
+public:
+
+    template< class T = Nema <  Planner , Stepper , Task>> 
+    static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , Task &task ){
+        T tmp{ stepPin, dirPin , planner , engine , task } ; 
+
+        /*if ( tmp.init( planner , engine, *taskSpace) != err_code_t::OK )
+            return etl::nullopt ; 
+       */ 
+        return tmp ; 
+    }
 private:
 
     static constexpr uint32_t ALL { 0u };
@@ -37,32 +49,19 @@ private:
     int8_t stepPin{ 0 } ;
     int8_t dirPin{ 0 } ;
 
-    Planner  *scurve { nullptr }  ; 
-    Stepper *stepper { nullptr } ;
+    Planner  &scurve ; 
+    Stepper &stepper ;
 
-    Task *task { nullptr };  
+    Task &task ;  
 
     bool running { false } ; 
-public:
-    using Planner =  T ;
-    using Stepper = N;
-    using Task =  M ;
-    template< class T = Nema <  Planner , Stepper , Task>> 
-    static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , etl::optional<Task> &taskSpace ){
-        T tmp{ stepPin, dirPin} ; 
 
-        if ( tmp.init( planner , engine, *taskSpace) != err_code_t::OK )
-            return etl::nullopt ; 
-        
-        return tmp ; 
-    }
-private:
 
-    Nema() = default ;
 
-    Nema(int8_t stepPin , int8_t dirPin): stepPin(stepPin) , dirPin( dirPin ){} 
+    Nema( int8_t stepPin , int8_t dirPin , Planner &p_scurve , Stepper &p_stepper , Task &p_task): 
+        stepPin(stepPin) , dirPin( dirPin ), scurve( p_scurve ) , stepper( p_stepper) , task( p_task){} 
 
-    int init(Planner &planner ,Stepper &engine   , Task &taskSpace){
+    /*int init(Planner &planner ,Stepper &engine   , Task &taskSpace){
         stepper = &engine ;
         scurve = &planner ;
         
@@ -70,7 +69,7 @@ private:
 
 
         return err_code_t::OK ;
-    }
+    }*/
 
 
     static void dataRelayTask(void * arg){
@@ -134,11 +133,9 @@ public:
 
     bool stop()  { return true; }
     bool start()  {
-        stepper->start();
-        scurve->start() ; 
-
-        *task = *Task::createTask( dataRelayTask, this , 2048 , 4);
-        if ( task == etl::nullopt) return false ; 
+        stepper.start();
+        scurve.start() ; 
+        task.start() ;
 
         running  = true ;
 

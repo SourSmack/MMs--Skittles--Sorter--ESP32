@@ -20,6 +20,7 @@ g++ -std=c++23 -g Sorter_test.cpp -o Sorter_test
 #include "Sorter.hpp"
 #include <format>
 #include <random>
+
 template < class T  , class N > 
 class  EventGroupMOCK {
 public:
@@ -114,12 +115,11 @@ public:
 static_assert( PlannerConcept< PlannerMOCK > , "PlannerMOCK doesn't meet concept requirments \n");
 
 class StepperMOCK{
-    struct ConstructorKey{};
 public:
-    explicit StepperMOCK( ConstructorKey) {} 
+
     
     static etl::optional<  StepperMOCK > create( const uint16_t step , const uint16_t dir ){
-        return etl::optional< StepperMOCK >{ etl::in_place , ConstructorKey{} } ;
+        return etl::optional< StepperMOCK >{ etl::in_place  }  ;
     }
 
     MOCK_METHOD( ( void ) , enqueue , ( const motionBlock_t  motion  ));
@@ -132,15 +132,13 @@ static_assert( StepperConcept< StepperMOCK > , "StepperMOCK doesn't meet concept
 template < class T , class N , class  M>
 class EngMOCK {
 private:
-    struct ConstructorKey{};
 public:
     using Planner = T;
     using Stepper = N ;
     using Task  = M ;
-    EngMOCK( ConstructorKey ){}
 
     static etl::optional< EngMOCK > create( const int8_t stepPin , const int8_t dirPin , Planner &planner ,Stepper &engine  , Task &taskSpace){
-        return etl::optional< EngMOCK >{ etl::in_place , ConstructorKey{} } ;
+        return etl::optional< EngMOCK >{ etl::in_place   } ;
     }     
     
     static void dataRelayTask(void * arg){ }
@@ -227,16 +225,7 @@ protected:
 
 inline std::ostream& operator<<(std::ostream& os, const sorterErrFlags& flags) {
     // Wypisujemy rawMask jako liczbę szesnastkową dla łatwego czytania bitów
-    std::string names[] = {
-    "busy",        
-    "slideEngine", 
-    "disksEngine", 
-    "slideSensor", 
-    "disksSensor", 
-    "homingDisks", 
-    "homingSlide", 
-    "eventGroup"  
-    };
+    constexpr auto names = magic_enum::enum_names< ErrCode >() ;
 
     if ( !static_cast<uint16_t>( flags.rawMask ) ){
         os << " ErrCode::OK " <<  std::endl ;
@@ -273,18 +262,7 @@ TEST_F( sortSingleCandyTEST , HappyPath){
 
     EXPECT_EQ( result , ErrCode::OK ) ;
 
-/*    sorterErrFlags sortSingleCandy(  ){
-        
-        disksEngine.move( fetchCandy  );
-        const auto rawIdx = disksSensor.getSample()  ; 
-        const auto safeIdx = ( rawIdx <  UNKNOWN_CUP_IDX ) ? rawIdx : UNKNOWN_CUP_IDX ; 
 
-        slideEngine.moveToCup( cupsMoves[ safeIdx ] ) ; 
-        disksEngine.move( flushCandy  );
-
-        return ErrCode::OK ;
-    }
-*/
 
 }
 TEST_F( startSortingTest , HappyPath){
@@ -381,101 +359,7 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
     auto result = sorter->homingSlide() ;
 
     EXPECT_EQ( result , ErrCode::OK ) ;
-/*
-  
-    sorterErrFlags homingSlide(){
-            auto sample = * static_cast < etl::string< COLORSENSOR_WORD_SIZE > * >( disksSensor.getSample() ) ;
-            auto chamberColor = colorToNum( sample ) ;
 
-            disksSensor.listenIT() ; 
-
-            disksEngine.move( spinForever   ); 
-
-            while ( !eventGroup.bitsWait(BIT_DISKSSENSOR_INPUT , portMAX_DELAY )) {}
-            
-
-            disksEngine.stop( ) ;
-
-            disksSensor.stopListeningIT() ;
-
-            return sorterErrFlags::OK ;
-
-        }
-    void startSorting() {
-        sortingTask.start() ; 
-    } 
-
-    sorterErrFlags getStatus()const{ return status ; }
-
-    sorterErrFlags stopSorting(){ 
-        sortingTask.stop() ; 
-        return sorterErrFlags::OK ;
-    }
-    static void _sortingFunction(void *pvParameter){
-        auto& pair = *static_cast< 
-                                    etl::pair<Sorter* , uint16_t > * 
-                                                                    >
-                                                                        ( pvParameter ) ;
-        auto& [ instance , token ] = pair ;
-        auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , disksSensor , status  ] = instance ;
-
-        if ( status != sorterErrFlags::OK ) return ;
-
-        if ( instance.homingSlide() != sorterErrFlags::OK){
-            status = sorterErrFlags::ERRORslideEngine ; 
-            return ;
-        } 
-        if ( instance.homingDisks() != sorterErrFlags::OK ) {
-            status = sorterErrFlags::ERRORdisksEngine; 
-            return ; 
-        }
-
-
-        while ( ! FREETask::stopRequested( token ) ){
-            disksEngine.move( fetchCandy ) ;
-
-            const auto& sample = *static_cast< const etl::string< COLORSENSOR_WORD_SIZE > * >( disksSensor.getSample() ) ; 
-            auto candyColor = colorToNum( sample ) ;
-
-            switch ( candyColor ){
-                case   RED  : 
-                    slideEngine.moveToCup( cup::RED ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   ORANGE  :
-                    slideEngine.moveToCup( cup::ORANGE ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   YELLOW  :
-                    slideEngine.moveToCup( cup::YELLOW ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   PURPLE  :
-                    slideEngine.moveToCup( cup::PURPLE ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                case   GREEN  : 
-                    slideEngine.moveToCup( cup::GREEN ) ; 
-                    disksEngine.move( flushCandy  );
-                    break;
-
-                default :
-                    slideEngine.moveToCup( cup::UNKNOWN ) ; 
-                    disksEngine.move( flushCandy  );
-                    break ;
-            }
-
-
-        }
-
-    }
-
-
-*/
 }
 
 extern "C" void app_main(){
