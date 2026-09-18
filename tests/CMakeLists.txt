@@ -6,3 +6,5 @@ set(COMPONENTS libs main interCommunication)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(tests)
+
+

@@ -1,11 +1,11 @@
 idf_component_register(
-    SRCS "Sorter_test.cpp" "Nema_test2.cpp" 
+    SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp"  
          #"Nema_test.cpp"
-         "../../components/motorControl/include/Nema.hpp"
          "../../main/Sorter.hpp"
     INCLUDE_DIRS "." 
                  "../../main"
-    REQUIRES freertos interCommunication libs
+                "../../components/motorControl/include/"
+    REQUIRES freertos interCommunication libs 
 )
 include(FetchContent)
 FetchContent_Declare(
@@ -33,5 +33,8 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
+
 # 3. Linkowanie pobranego GMock do naszego komponentu testowego
-target_link_libraries(${COMPONENT_LIB} PRIVATE gtest gmock magic_enum::magic_enum)
+target_link_libraries(   ${COMPONENT_LIB}  PRIVATE gtest gmock magic_enum::magic_enum)
+target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,--whole-archive" "$<TARGET_FILE:${COMPONENT_LIB}>" "-Wl,--no-whole-archive")
+

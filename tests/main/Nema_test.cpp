@@ -108,7 +108,7 @@ public:
 
 uint32_t MOCKtask::MAX_DELAY { 10000 } ;
 
-extern "C" void app_main(){
+/*extern "C" void app_main(){
     #define stepPin 0 
     #define dirPin 1 
     auto  planner { *MOCKplanner::create() } ; 
