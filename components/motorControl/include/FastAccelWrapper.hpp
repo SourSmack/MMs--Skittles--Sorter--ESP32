@@ -24,8 +24,8 @@ public:
 
     void enqueue( motionBlock_t  motion) ; 
     
-    void stop(bool instant = false  ) ; 
-    void start(); 
+    bool stop(bool instant = false  ) ; 
+    bool start(); 
     
 
 };

@@ -53,8 +53,8 @@ concept PlannerConcept = requires( T Planner , T ConstPlanner ,
     //{ T::create() } -> std::same_as< etl::optional< T>> ; 
 
     { Planner.recieve() }       -> std::same_as< motionBlock_t > ;
-    { Planner.stop() }          -> std::same_as< void > ;
-    { Planner.start() }         -> std::same_as< void > ;
+    { Planner.stop() }          -> std::same_as< bool > ;
+    { Planner.start() }         -> std::same_as< bool > ;
     { Planner.enqueue( move ) } -> std::same_as< void > ;
     
 };
@@ -67,8 +67,8 @@ concept StepperConcept  = requires( T Stepper , const T ConstStepper ,
     //requires ! std::default_initializable<T> ; 
     { Stepper.enqueue(   motion) } -> std::same_as<void > ;
     
-    { Stepper. stop() }   -> std::same_as< void > ;
-    { Stepper.start() } -> std::same_as<void> ;
+    { Stepper. stop() }   -> std::same_as< bool > ;
+    { Stepper.start() } -> std::same_as< bool > ;
     //{ T::create( step , dir ) }  -> std::same_as< etl::optional< T >> ;
 };
 

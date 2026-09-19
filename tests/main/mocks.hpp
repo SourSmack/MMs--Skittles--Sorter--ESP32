@@ -95,8 +95,8 @@ public:
 
     MOCK_METHOD( ( motionBlock_t ) , calculateFrequency , ( const moveBlock_t &move ));
     MOCK_METHOD( ( motionBlock_t ) , recieve ,  ());
-    MOCK_METHOD( ( void ) , stop , ( ));
-    MOCK_METHOD( ( void ) , start , ());
+    MOCK_METHOD( ( bool ) , stop , ( ));
+    MOCK_METHOD( ( bool ) , start , ());
     MOCK_METHOD( ( void ) , enqueue , ( const moveBlock_t &move ));
  
 };
@@ -111,8 +111,8 @@ public:
     }
 
     MOCK_METHOD( ( void ) , enqueue , ( const motionBlock_t  motion  ));
-    MOCK_METHOD( ( void ) , stop , ());
-    MOCK_METHOD( ( void ) , start , ());
+    MOCK_METHOD( ( bool ) , stop , ());
+    MOCK_METHOD( ( bool ) , start , ());
 
 };
 static_assert( StepperConcept< StepperMOCK > , "StepperMOCK doesn't meet concept requirments \n");

@@ -29,18 +29,20 @@ typedef enum {
 template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task > 
 class Nema  
 {
-
 public:
+    friend class NemaTesting ;
 
     template< class T = Nema <  Planner , Stepper , Task>> 
     static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , Task &task ){
         T tmp{ stepPin, dirPin , planner , engine , task } ; 
 
-        /*if ( tmp.init( planner , engine, *taskSpace) != err_code_t::OK )
-            return etl::nullopt ; 
-       */ 
+        if ( ! tmp.init()  ) return etl::nullopt ;
+
         return tmp ; 
     }
+    
+    Nema( int8_t stepPin , int8_t dirPin , Planner &p_scurve , Stepper &p_stepper , Task &p_task): 
+        stepPin(stepPin) , dirPin( dirPin ), scurve( p_scurve ) , stepper( p_stepper) , task( p_task){} 
 private:
 
     static constexpr uint32_t ALL { 0u };
@@ -58,17 +60,9 @@ private:
 
 
 
-    Nema( int8_t stepPin , int8_t dirPin , Planner &p_scurve , Stepper &p_stepper , Task &p_task): 
-        stepPin(stepPin) , dirPin( dirPin ), scurve( p_scurve ) , stepper( p_stepper) , task( p_task){} 
 
-    /*int init(Planner &planner ,Stepper &engine   , Task &taskSpace){
-        stepper = &engine ;
-        scurve = &planner ;
-        
-        task = &taskSpace ;
-
-
-        return err_code_t::OK ;
+    /*int init(){
+        task.set( dataRelayTask , this , 2048 , 4  );
     }*/
 
 
@@ -94,6 +88,8 @@ private:
             }
         }
     }
+
+   
 
 
     //static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n");
@@ -131,7 +127,11 @@ public:
 
     void flush(const uint32_t motionsToFlush = ALL)  {}
 
-    bool stop()  { return true; }
+    bool stop()  {
+        stepper.stop(); 
+        scurve.stop() ;
+        task.stop() ;
+    }
     bool start()  {
         stepper.start();
         scurve.start() ; 

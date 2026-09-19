@@ -9,7 +9,11 @@
 class NemaTesting : public ::testing::Test{
 protected:
 
+    PlannerMOCK planner ;
+    StepperMOCK stepper ;
+    TaskMOCK task ;
 
+    Nema< PlannerMOCK , StepperMOCK , TaskMOCK > nemaEngine{ 0 , 0 , planner , stepper , task } ;
 
 
 };
@@ -35,3 +39,34 @@ concept EngineConcept = requires( T Engine, const T ConstEngine ,
 
 
 }; */
+using start  = NemaTesting ;
+
+using ::testing::_;
+using ::testing::Return;
+
+TEST_F( start , HappyPath){
+
+    testing::InSequence seq ;
+    
+    EXPECT_CALL( stepper , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
+/*    bool start()  {
+        stepper.start();
+        scurve.start() ; 
+        task.start() ;
+
+        running  = true ;
+
+        return true; 
+     }
+*/ 
+
+    EXPECT_CALL( planner , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
+
+    EXPECT_CALL( task , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
+
+    auto result = nemaEngine.start() ;
+
+    EXPECT_EQ( result , true ) ;
+
+
+}
