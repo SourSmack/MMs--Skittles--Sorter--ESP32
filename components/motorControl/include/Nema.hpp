@@ -45,6 +45,7 @@ public:
         stepPin(stepPin) , dirPin( dirPin ), scurve( p_scurve ) , stepper( p_stepper) , task( p_task){} 
 private:
 
+
     static constexpr uint32_t ALL { 0u };
     static constexpr uint32_t maxBuffor { 32u } ; 
 
@@ -113,7 +114,9 @@ public:
             scurve->enqueue( move ) ;
         }
         else{
-
+            // TODO (MAYBE) stop engine -> do new steps 
+            // rn it is sloppy bcs we only skip Planner queue which is unintuitive imo 
+            // so I'd have to have direct engine steering api 49kkkkk
             scurve->stop() ;  
             while ( auto motion  = scurve->calculateFrequency( move ) ){
                 stepper->enqueue( motion ) ; 
