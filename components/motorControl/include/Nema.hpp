@@ -43,6 +43,58 @@ public:
     
     Nema( int8_t stepPin , int8_t dirPin , Planner &p_scurve , Stepper &p_stepper , Task &p_task): 
         stepPin(stepPin) , dirPin( dirPin ), scurve( p_scurve ) , stepper( p_stepper) , task( p_task){} 
+
+
+    bool isRunning(const uint8_t engineNum)const  { return running ;}
+    long position(const uint8_t engineNum)   { return 0 ;}
+
+
+    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  { }
+    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  { }
+    void moveToCup( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait  = 0   ){
+        // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
+        // moveToCup  just manages whether instantly make moveo or enqu in normal manner
+        // manages que position motionBlock_t
+        if ( !running) return ;
+
+        if  ( flags.enqueue ){
+
+            scurve.enqueue( move ) ;
+        }
+        else{
+            // TODO (MAYBE) stop engine -> do new steps 
+            // rn it is sloppy bcs we only skip Planner queue which is unintuitive imo 
+            // so I'd have to have direct engine steering api 49kkkkk
+            scurve.stop() ;  
+            while ( auto motion  = scurve.calculateFrequency( move ) ){
+                stepper.enqueue( motion ) ; 
+            }
+            scurve.start();
+        }
+    }
+
+
+    void update(const uint32_t blocksToUpdate = ALL)  {}
+
+    void flush(const uint32_t motionsToFlush = ALL)  {}
+
+    bool stop()  {
+        stepper.stop(); 
+        scurve.stop() ;
+        task.stop() ;
+        running = false ;
+        return true ;
+    }
+    bool start()  {
+        stepper.start();
+        scurve.start() ; 
+        task.start() ;
+
+        running  = true ;
+
+        return true; 
+     }
+ 
 private:
 
 
@@ -62,28 +114,30 @@ private:
 
 
 
-    /*int init(){
+    int init(){
         task.set( dataRelayTask , this , 2048 , 4  );
-    }*/
+        return true ; 
+    }
 
 
     static void dataRelayTask(void * arg){
-        auto instance { *static_cast< Nema*>( arg ) } ;
+        auto& pair = *static_cast< etl::pair<Nema& , uint16_t > * >( arg ) ;
+        auto& [ instance , token ] = pair ;
         auto& scurve = instance.scurve ; 
         auto& stepper = instance.stepper ; 
         auto& [dataRelayStart , dataRelayLoopON , plannerStart , plannerLoopON , plannersQueueFull] = message ;  
 
 
         
-        while ( ! Task::stopRequested() ){
+        while ( ! Task::stopRequested( token ) ){
             
-            auto queueFull =  Task::notifyWait( plannersQueueFull , 0 ) ;
+            auto queueFull =  Task::notifyWait( token ,  plannersQueueFull , 0 ) ;
 
             if ( queueFull ){
                 motionBlock_t motion{} ;
                 for (auto i{0} ; i < Nema::maxBuffor ; ++i){
-                    motion = scurve->recieve() ; 
-                    stepper->enqueue( motion ) ;
+                    motion = scurve.recieve() ; 
+                    stepper.enqueue( motion ) ;
                 }
                 queueFull = false ;
             }
@@ -93,58 +147,7 @@ private:
    
 
 
-    //static_assert( EngineConcept<Nema, Planner , Stepper , Task > , "Nema does not meet Concept: \"EngineConcept\" requirments!\n");
-public:
 
-
-    bool isRunning(const uint8_t engineNum)const  { return running ;}
-    long position(const uint8_t engineNum)   { return 0 ;}
-
-
-    void move( const moveBlock_t &move  ,const  moveInfo_t flags , const int wait  )  { }
-    void moveTo( const moveBlock_t &move , const moveInfo_t flags , const int wait   )  { }
-    void moveToCup( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait  = 0   ){
-        // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
-        // moveToCup  just manages whether instantly make moveo or enqu in normal manner
-        // manages que position motionBlock_t
-        if ( !running) return ;
-
-        if  ( flags.enqueue ){
-
-            scurve->enqueue( move ) ;
-        }
-        else{
-            // TODO (MAYBE) stop engine -> do new steps 
-            // rn it is sloppy bcs we only skip Planner queue which is unintuitive imo 
-            // so I'd have to have direct engine steering api 49kkkkk
-            scurve->stop() ;  
-            while ( auto motion  = scurve->calculateFrequency( move ) ){
-                stepper->enqueue( motion ) ; 
-            }
-            scurve->start();
-        }
-    }
-
-
-    void update(const uint32_t blocksToUpdate = ALL)  {}
-
-    void flush(const uint32_t motionsToFlush = ALL)  {}
-
-    bool stop()  {
-        stepper.stop(); 
-        scurve.stop() ;
-        task.stop() ;
-    }
-    bool start()  {
-        stepper.start();
-        scurve.start() ; 
-        task.start() ;
-
-        running  = true ;
-
-        return true; 
-     }
- 
 
 };
 

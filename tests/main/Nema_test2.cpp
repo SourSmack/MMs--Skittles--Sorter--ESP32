@@ -11,35 +11,17 @@ protected:
 
     PlannerMOCK planner ;
     StepperMOCK stepper ;
-    TaskMOCK task ;
+    testing::NiceMock< TaskMOCK> task ;
 
     Nema< PlannerMOCK , StepperMOCK , TaskMOCK > nemaEngine{ 0 , 0 , planner , stepper , task } ;
-
+    const motionBlock_t VALID_BLOCK { 1, 2, true };
+    const motionBlock_t INVALID_BLOCK { 0, 0, false };
+    NemaTesting(){  nemaEngine.init() ; }
 
 };
 
-/*
-template< class T >
-concept EngineConcept = requires( T Engine, const T ConstEngine , 
-                            //const int8_t stepPin , const int8_t dirPin , typename T::Planner &planner ,typename T::Stepper &engine  , typename T::Task  &task, 
-                            const moveBlock_t &move  ,const  moveInfo_t flags =  {}, const int wait  = 0 ) {
-
-    //requires !std::default_initializable< T >;
-
-    //{ T::create(  stepPin ,  dirPin ,  planner , engine  , task )} -> std::same_as< etl::optional< T >> ;
-    { ConstEngine.isRunning() } -> std::same_as< bool > ; 
-    { Engine.position() }       -> std::same_as< long > ;
-    
-    { Engine.start() } -> std::same_as< bool > ;
-    { Engine.stop()  } -> std::same_as< bool > ;
-
-    { Engine.move(      move , flags , wait ) } -> std::same_as< void > ; 
-    { Engine.moveTo(    move , flags , wait ) } -> std::same_as< void > ;
-    { Engine.moveToCup( move , flags , wait ) } -> std::same_as< void > ;
-
-
-}; */
 using start  = NemaTesting ;
+using moveToCup  = NemaTesting ;
 
 using ::testing::_;
 using ::testing::Return;
@@ -70,3 +52,65 @@ TEST_F( start , HappyPath){
 
 
 }
+
+TEST_F(moveToCup , HappyPathEnqueue){
+    EXPECT_CALL(stepper, start()).WillOnce(testing::Return(true));
+    EXPECT_CALL(planner, start()).WillOnce(testing::Return(true));
+    EXPECT_CALL(task, start()).WillOnce(testing::Return(true));
+    
+    nemaEngine.start(); // <--- KLUCZ! Teraz running = true!
+    testing::InSequence seq ; 
+
+    EXPECT_CALL( planner , enqueue( testing::_ ) ).Times(1); 
+
+    nemaEngine.moveToCup( moveBlock_t{ 0 } ,  moveInfo_t{ true , true  }, 0 ); 
+/*void moveToCup( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait  = 0   ){
+        // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
+        // moveToCup  just manages whether instantly make moveo or enqu in normal manner
+        // manages que position motionBlock_t
+        if ( !running) return ;
+
+        if  ( flags.enqueue ){
+
+            scurve->enqueue( move ) ;
+        }
+        else{
+            // TODO (MAYBE) stop engine -> do new steps 
+            // rn it is sloppy bcs we only skip Planner queue which is unintuitive imo 
+            // so I'd have to have direct engine steering api 49kkkkk
+            scurve->stop() ;  
+            while ( auto motion  = scurve->calculateFrequency( move ) ){
+                stepper->enqueue( motion ) ; 
+            }
+            scurve->start();
+        }
+    }
+*/
+
+}
+
+
+TEST_F( moveToCup , HappyPathNotEnqueue){
+    EXPECT_CALL(stepper, start()).WillOnce(testing::Return(true));
+    EXPECT_CALL(planner, start()).WillOnce(testing::Return(true));
+    EXPECT_CALL(task, start()).WillOnce(testing::Return(true));
+    
+    nemaEngine.start();    
+    
+
+    EXPECT_CALL( planner , stop()).Times( 1 ) ;
+    auto i{ 0U } ;
+    EXPECT_CALL( planner , calculateFrequency( testing::_ ))
+        .WillOnce( testing::Return( VALID_BLOCK ))
+        .WillOnce( testing::Return( VALID_BLOCK ))
+        .WillOnce( testing::Return( VALID_BLOCK ))
+        .WillOnce( testing::Return( VALID_BLOCK ))
+        .WillOnce( testing::Return( INVALID_BLOCK )) ;
+
+    EXPECT_CALL( stepper , enqueue( testing::_ )).Times(4 ) ;
+    EXPECT_CALL( planner , start() ).Times( 1 ) ;
+
+    nemaEngine.moveToCup( moveBlock_t{ 0 } ,  moveInfo_t{ false  , false  }, 0 ) ;
+}
+
+

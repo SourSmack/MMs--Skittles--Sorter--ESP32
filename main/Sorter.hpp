@@ -233,7 +233,7 @@ private:
     
 
     static void _sortingFunction(void *pvParameter){
-        auto& pair = *static_cast< etl::pair<Sorter* , uint16_t > * >( pvParameter ) ;
+        auto& pair = *static_cast< etl::pair<Sorter& , uint16_t > * >( pvParameter ) ;
         auto& [ instance , token ] = pair ;
         auto& [ eventGroup , sortingTask , slideEngine , slidePositionSensor , disksEngine , disksSensor , status  ] = instance ;
 

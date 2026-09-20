@@ -31,6 +31,7 @@ public:
 
     static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
 
+    bool set( void (*task)(void*arg) , void * p_arg ,  const uint32_t stackSize , const uint32_t priority ) ; 
     void notify( uint8_t message )   ;
     bool requestStop()  ;
     bool join();

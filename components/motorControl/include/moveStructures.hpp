@@ -12,6 +12,7 @@ struct motionBlock_t
         if ( ticks == 0 && steps == 0 && dir == 0 ) return false ;
         return true ;
     }
+    bool operator==(const motionBlock_t&) const = default;
 };
 
 
@@ -43,7 +44,8 @@ struct moveBlock_t
             startSteps =  traversalSteps =  endSteps = 0 ;
         }
 
-    } 
+    }
+    constexpr moveBlock_t() = default ;
     bool operator==(const moveBlock_t&) const = default;
 };
 

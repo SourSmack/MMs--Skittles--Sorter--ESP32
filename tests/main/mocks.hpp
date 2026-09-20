@@ -43,6 +43,7 @@ public:
 
 
     static etl::optional < TaskMOCK >  create (  void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority ){ return etl::optional< TaskMOCK >{ etl::in_place } ;}
+    MOCK_METHOD( (bool) , set , ( void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority)) ;
     MOCK_METHOD( ( void ) , notify , ( const uint32_t message )  ) ;
     MOCK_METHOD( ( bool ) , requestStop  , ()) ;
     MOCK_METHOD( ( bool ) , join , ()) ;
