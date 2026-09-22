@@ -1,6 +1,6 @@
 #pragma once
 #include "etl/optional.h"
-#include "etl/array.h"
+#include "etl/vector.h"
 #include "etl/atomic.h"
 #include "FreeRTOSWrapper.hpp"
 
@@ -10,8 +10,8 @@
 
 class FREETask {
 private:
-    template < class T > 
-    static etl::array< etl::pair< T& , uint16_t >, 16 > tokens ; 
+
+    static etl::vector<  FREETask& , 16 > tokensLookup ; 
 private:
     TaskHandle_t task;
     etl::atomic< bool > taskRunning { false } ;
@@ -26,18 +26,32 @@ private:
 public:
 
     ~FREETask(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
-        
+    
+    FREETask(): tokensLookup.push_back( this )  {}
         
 
-    static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
-
-    bool set( void (*task)(void*arg) , void * p_arg ,  const uint32_t stackSize , const uint32_t priority ) ; 
+    static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
+        FREETask tmp ;
+        tmp.set( task , arg ,stackSize , priority) ;
+        return etl::nullopt;
+    }
+    bool set( void (*task)(void*arg) , void * p_arg ,  const uint32_t stackSize , const uint32_t priority ) {
+        arg = p_arg  ;
+    } 
     void notify( uint8_t message )   ;
     bool requestStop()  ;
     bool join();
 
-    static bool stopRequested( uint32_t token  );
-    static bool notifyWait( uint32_t token ,   uint8_t message , uint32_t delay );
+    static bool stopRequested( uint32_t token  ){
+        if ( tokensLookup[ token ]._stopRequested ) return true ;
+        return false ;
+    }
+    static bool notifyWait( uint32_t token ,   uint8_t message , uint32_t delay ){
+        
+        auto& instance = tokensLookup[ token ];
+        instance.task
+
+    }
 
     /*   looks up some global std::pair structure to see which FREEtask instance is resposible for that TOKEN 
         

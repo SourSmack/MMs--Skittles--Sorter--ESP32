@@ -1,9 +1,9 @@
 idf_component_register(
     SRCS 
     
-        "ScurvePlanner.cpp"
+        "ScurvePlanner.cpp" "FastAccelWrappper.cpp"
     INCLUDE_DIRS 
         "include"               # Udostępnia folder include/ na zewnątrz
     REQUIRES 
-        libs driver freertos         # Zależności prywatne (potrzebne tylko w .cpp)
+        libs driver freertos interCommunication     # Zależności prywatne (potrzebne tylko w .cpp)
 )

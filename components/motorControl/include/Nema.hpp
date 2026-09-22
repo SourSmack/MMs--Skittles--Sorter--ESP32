@@ -30,9 +30,7 @@ template < PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task >
 class Nema  
 {
 public:
-    friend class NemaTesting ;
-
-    template< class T = Nema <  Planner , Stepper , Task>> 
+    friend class NemaTesting ; template< class T = Nema <  Planner , Stepper , Task>> 
     static etl::optional< T > create( int8_t stepPin , int8_t dirPin , Planner &planner ,Stepper &engine  , Task &task ){
         T tmp{ stepPin, dirPin , planner , engine , task } ; 
 
@@ -95,6 +93,7 @@ public:
         return true; 
      }
  
+   
 private:
 
 

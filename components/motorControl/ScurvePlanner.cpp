@@ -1,8 +1,13 @@
 #include "include/ScurvePlanner.hpp"
 #include "scurve.h"
+/* ScurvePlanner(): taskHandle( FREETask::create( scurveTask , this , 2048 , 4 )) {}
+   // static etl::optional< ScurvePlanner >  create();
+    motionBlock_t calculateFrequency(const moveBlock_t &move   , motionBlock_t &destQue)   ; 
+    bool stop();
+    bool start();
+    void enqueue( const moveBlock_t motion);
+  */  
 
-
-ScurvePlanner::ScurvePlanner():movesQ{} , motionsQ{} {}
 
 etl::optional< ScurvePlanner >  ScurvePlanner::create( ){
     ScurvePlanner tmp{};
@@ -15,7 +20,14 @@ etl::optional< ScurvePlanner >  ScurvePlanner::create( ){
 }
 
 void scurveTask(void * arg){
-    xTaskNotifyWait( );
+    auto& [ instance, token  ] = *static_cast< etl::pair< ScurvePlanner* , uint16_t >*>( arg ) ;
+    auto& [ MAXBUFFOR , movesQ , taskHandle ] = instance ;
+    
+
+    while ( !movesQ.empty()  && !FREETask::stopRequested( token )){
+
+    }
+    
     
 }
 void ScurvePlanner::calculateFrequency(const moveBlock_t &move)   
@@ -24,9 +36,3 @@ void ScurvePlanner::calculateFrequency(const moveBlock_t &move)
 
 } 
 
-
-motionBlock_t recieve(){
-    motionBlock_t motion ;
-    xQueueReceive( motionsQ , &motion,  pdMS_TO_TICKS( 10 ) ) ;
-    return motion ;
-};

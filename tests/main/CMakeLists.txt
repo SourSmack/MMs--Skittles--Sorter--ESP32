@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp"  
+    SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp" "ScurvePlanner_test.cpp"  
          #"Nema_test.cpp"
          "../../main/Sorter.hpp"
     INCLUDE_DIRS "." 

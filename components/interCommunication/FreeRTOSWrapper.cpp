@@ -6,6 +6,8 @@
 etl::optional< FREETask > FREETask::create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
 
 //    xTaskCreate(task , "task" , stackSize , arg , priority , &taskHandle );
+    FREETask tmp ;
+    tmp.set( task , arg ,stackSize , priority) ;
     return etl::nullopt;
 }
 void FREETask::notify( uint8_t message ){
