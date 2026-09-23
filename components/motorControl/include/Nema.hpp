@@ -130,7 +130,7 @@ private:
         
         while ( ! Task::stopRequested( token ) ){
             
-            auto queueFull =  Task::notifyWait( token ,  plannersQueueFull , 0 ) ;
+            auto queueFull =  Task::waitForNotify( token ,  plannersQueueFull , 0 ) ;
 
             if ( queueFull ){
                 motionBlock_t motion{} ;

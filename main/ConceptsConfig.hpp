@@ -77,7 +77,6 @@ concept TaskConcept =
                     requires( 
                                 T Task , const T ConstTask ,
                                 void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority,  //  etl::optional< T> T::createTask( ... ) 
-                                const uint32_t token , 
                                 const uint32_t ms , 
                                 const uint32_t message , const uint32_t delay   
                                                 ){
@@ -85,7 +84,7 @@ concept TaskConcept =
     //{ T::create(  task ,  arg ,   stackSize ,  priority) }  -> std::same_as< etl::optional< T >> ;
     //requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
 
-    { Task.set( task , arg , stackSize , priority  ) } -> std::same_as< bool > ;
+    //{ Task.set( task , arg , stackSize , priority  ) } -> std::same_as< bool > ;
     { Task.notify(  message )  }            -> std::same_as< void > ;
     { Task.requestStop() }   -> std::same_as< bool > ;
     { Task.join() }          -> std::same_as< bool > ; 
@@ -93,9 +92,9 @@ concept TaskConcept =
     { Task.start() } -> std::same_as< bool > ;
 
 
-    { T::notifyWait( token ,  message ,  delay ) }  -> std::same_as< bool > ;
-    { T::stopRequested( token ) }   -> std::same_as< bool > ;
-    { T::waitMS(token ,  ms )} -> std::same_as<void> ;
+    { T::waitForNotify( message ,  delay ) }  -> std::same_as< bool > ;
+    { T::stopRequested( message ) }   -> std::same_as< bool > ;
+    { T::waitMS( ms )} -> std::same_as<void> ;
     { T::MAX_DELAY } -> std::convertible_to< uint32_t > ;
 };
 

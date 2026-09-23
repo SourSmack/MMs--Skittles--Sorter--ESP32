@@ -50,7 +50,7 @@ public:
     MOCK_METHOD( ( bool ) , stop , ()) ;
     MOCK_METHOD( ( bool ) , start , ()) ;
 
-    static bool notifyWait( const uint32_t token , const uint32_t message , const uint32_t delay){ return true ; }
+    static bool waitForNotify( const uint32_t token , const uint32_t message , const uint32_t delay){ return true ; }
     static bool stopRequested( const uint32_t token ){ return  true; }
     static void waitMS( const uint32_t token , const uint32_t ms ){  }
 
@@ -61,7 +61,7 @@ static_assert( TaskConcept< TaskMOCK >  );
 
 class TaskPerspective{
 public:
-    bool notifyWait( uint32_t token , uint32_t message, uint32_t delay){ return true ;  }
+    bool waitForNotify( uint32_t token , uint32_t message, uint32_t delay){ return true ;  }
     bool stopRequested( uint32_t token ){  return true; }
     void waitMS( uint32_t token , uint32_t ms ) { }
 };
@@ -69,7 +69,7 @@ public:
 class TaskPerspectiveMOCK{
 
 public:
-    MOCK_METHOD( ( bool ) , notifyWait , (  uint32_t token , uint32_t message, uint32_t delay ));
+    MOCK_METHOD( ( bool ) , waitForNotify , (  uint32_t token , uint32_t message, uint32_t delay ));
     MOCK_METHOD( ( bool ) , stopRequested ,  ( uint32_t token ));
     MOCK_METHOD( ( bool ) , waitMS , ( uint32_t token , uint32_t ms ) );
 

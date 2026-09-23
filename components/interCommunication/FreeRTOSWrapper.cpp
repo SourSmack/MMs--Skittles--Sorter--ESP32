@@ -19,7 +19,7 @@ bool FREETask::stopRequested( uint32_t token  ){
     return true;
 }
 
-bool FREETask::notifyWait(uint32_t token , uint8_t message , uint32_t delay ){
+bool FREETask::waitForNotify(uint32_t token , uint8_t message , uint32_t delay ){
     uint32_t taskBits{0};
     xTaskNotifyWait(0x00 , message , &taskBits , delay) ; 
     return taskBits & ~message ; 

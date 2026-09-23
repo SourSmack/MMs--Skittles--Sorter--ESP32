@@ -92,11 +92,11 @@ public:
         taskCount2 ++  ; 
         return false  ; 
     }
-    static bool notifyWait( const uint32_t token , const uint32_t message , const uint32_t delay ){  
+    static bool waitForNotify( const uint32_t token , const uint32_t message , const uint32_t delay ){  
         static auto count { 0 } ; 
         if ( count >= 1 ) return false ;
         count ++ ; 
-        std::cout << "MOCKtask : notifyWait()  " << message << std::endl ;
+        std::cout << "MOCKtask : waitForNotify()  " << message << std::endl ;
         return true ;
     } 
     static void waitMS(const uint32_t token , const  uint32_t ms ){  std::this_thread::sleep_for( std::chrono::milliseconds( ms ) ); } ;
