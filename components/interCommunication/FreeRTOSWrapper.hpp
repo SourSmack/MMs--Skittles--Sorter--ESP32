@@ -17,14 +17,25 @@ private:
 
     etl::atomic< bool > taskRunning { false } ;
 
+    uint32_t stopBit{ 0 } ;
 
 
-    void (*task)(void*arg) ;
+    void (*p_task)(void*) ;
     void * arg ;
     uint32_t stackSize ; 
     uint32_t priority ;
 
     static uint32_t MAX_DELAY ;
+
+    static void task(){
+
+        taskRunnning = true ;
+        p_task( arg  ) ;
+
+        vTaskDelete() ;
+        taskRunning = false ;
+
+    }
 public:
 
     ~FREETask(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
@@ -43,19 +54,36 @@ public:
     /*bool set( void (*task)(void*arg) , void * p_arg ,  const uint32_t stackSize , const uint32_t priority ) {
         arg = p_arg  ;
     } */
-    void notify( uint8_t message )   ;
-    bool requestStop()  ;
-    bool join();
+    bool notify( uint8_t message )   {
+        auto result = xTaskNotify( taskHandle , message , eSetsBits ) ;
+        if ( result != pdPASS) return false ; 
+        return true ;
+    }
+    bool requestStop()  {
+        auto result = xTaskNotify( taskHandle , stopBit , eSetsBits  ) ;
+        if ( result != pdPASS) return false ; 
+        return true ;
+    }
+    bool join(){
+        while ( taskRunning ){ taskYIELD(); }
+    }
 
-    bool start() ; 
-    bool stop() ; 
+    bool start() {
+        auto result  = xTaskCreate( task , "task" , stackSizek , nullptr  , priority , &taskHandle ) ;
+        if ( !pdPASS ) return false ; 
+        return true; 
+    } 
+    bool stop() {
+        requestStop() ; 
+        join() ;
+    } 
 
 
 
 
-    static bool stopRequested(  uint32_t stopBitMask ){
+    static bool stopRequested(   ){
         uint32_t result { 0 } ;
-        if ( !xTaskNotifyWait( 0 , stopBitMask ,  &result , 0  )) return false ;
+        if ( !xTaskNotifyWait( 0 , stopBit ,  &result , 0  )) return false ;
         if ( result & stopBitMask ) return true ;
         return false ;
     }
