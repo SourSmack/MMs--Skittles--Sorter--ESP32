@@ -6,31 +6,32 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "ConceptsConfig.hpp"
 
 
 class FREETask {
 private:
 
-    static etl::vector<  FREETask* , 16 > tokensLookup ; 
 
     TaskHandle_t taskHandle { nullptr };
 
     etl::atomic< bool > taskRunning { false } ;
 
-    uint32_t stopBit{ 0 } ;
 
 
-    void (*p_task)(void*) ;
+    void (*task)(void*) ;
     void * arg ;
     uint32_t stackSize ; 
     uint32_t priority ;
 
     static uint32_t MAX_DELAY ;
 
-    static void task(){
+    uint32_t stopBit : 1 { 0b1 } ;
+
+    static void _task(){
 
         taskRunnning = true ;
-        p_task( arg  ) ;
+        task( arg  ) ;
 
         vTaskDelete() ;
         taskRunning = false ;
@@ -38,70 +39,32 @@ private:
     }
 public:
 
-    ~FREETask(){  if ( taskRunning) { requestStop() ;  join() ;  }}  ;
+    ~FREETask(){ 
+        auto i{ 5 } ; 
+        while( i--){ 
+            if ( join()) break ; 
+        }  
+    }  
     
-    FREETask(  void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )
-        : task( task ) , arg( arg ) , stackSize( stackSize ) , priority( priority ){
-            tokensLookup.push_back( this ) ;
-        }
+    FREETask(  void (*p_task)(void*) , void * p_arg ,  uint32_t p_stackSize , uint32_t p_priority )
+        : task( p_task ) , arg( p_arg ) , stackSize( p_stackSize ) , priority( p_priority ) {}
         
 
     static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
-        FREETask tmp{ task ,arg , stackSize , priority } ;
-        
-        return etl::nullopt;
-    }
-    /*bool set( void (*task)(void*arg) , void * p_arg ,  const uint32_t stackSize , const uint32_t priority ) {
-        arg = p_arg  ;
-    } */
-    bool notify( uint8_t message )   {
-        auto result = xTaskNotify( taskHandle , message , eSetsBits ) ;
-        if ( result != pdPASS) return false ; 
-        return true ;
-    }
-    bool requestStop()  {
-        auto result = xTaskNotify( taskHandle , stopBit , eSetsBits  ) ;
-        if ( result != pdPASS) return false ; 
-        return true ;
-    }
-    bool join(){
-        while ( taskRunning ){ taskYIELD(); }
-    }
 
-    bool start() {
-        auto result  = xTaskCreate( task , "task" , stackSizek , nullptr  , priority , &taskHandle ) ;
-        if ( !pdPASS ) return false ; 
-        return true; 
-    } 
-    bool stop() {
-        requestStop() ; 
-        join() ;
-    } 
+    bool notify( const uint32_t message ) ;
+
+    bool requestStop()  ;
+    bool join();
+
+    bool start() ;
 
 
+    static bool stopRequested(   );
 
+    static bool waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay );
 
-    static bool stopRequested(   ){
-        uint32_t result { 0 } ;
-        if ( !xTaskNotifyWait( 0 , stopBit ,  &result , 0  )) return false ;
-        if ( result & stopBitMask ) return true ;
-        return false ;
-    }
-    static bool waitForNotify(    uint32_t waitBitMask , uint32_t p_delay ){
-        
-        
-        uint32_t result { 0 } ;
-        auto delay = ( p_delay == MAX_DELAY ) ? (  portMAX_DELAY ) : pdMS_TO_TICKS( p_delay ) ;
-        if ( !xTaskNotifyWait( 0 ,  waitBitMask , &result , delay )) return false ;
-
-        if ( result & waitBitsMask )  return true ;
- 
-        return false  ;
-
-    }
-
-    static void waitMs(  uint32_t ms ) {
-        vTaskDelay( pdMS_TO_TICKS( ms ) ) ;
-    }
-    
+    static void waitMs( const uint32_t ms ) ;
 };
+
+static_assert( TaskConcept< FREETask > );
