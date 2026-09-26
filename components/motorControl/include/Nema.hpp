@@ -73,9 +73,7 @@ public:
 
 
     void update(const uint32_t blocksToUpdate = ALL)  {}
-
-    void flush(const uint32_t motionsToFlush = ALL)  {}
-
+void flush(const uint32_t motionsToFlush = ALL)  {}
     bool stop()  {
         stepper.stop(); 
         scurve.stop() ;
@@ -113,10 +111,6 @@ private:
 
 
 
-    int init(){
-        task.set( dataRelayTask , this , 2048 , 4  );
-        return true ; 
-    }
 
 
     static void dataRelayTask(void * arg){

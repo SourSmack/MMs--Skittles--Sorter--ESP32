@@ -11,11 +11,11 @@
 
 class FREETask {
 private:
-
+    friend class FREERTOSTest ;
 
     TaskHandle_t taskHandle { nullptr };
 
-    etl::atomic< bool > taskRunning { false } ;
+     bool  taskRunning { false } ;
 
 
 
@@ -24,20 +24,20 @@ private:
     uint32_t stackSize ; 
     uint32_t priority ;
 
-    static uint32_t MAX_DELAY ;
 
-    uint32_t stopBit : 1 { 0b1 } ;
 
-    static void _task(){
+    static void _task( void * arg ){
+        auto &instance=  *static_cast<FREETask*>( arg ) ;
+        instance.taskRunning = true ;
+        instance.task( arg  ) ;
 
-        taskRunnning = true ;
-        task( arg  ) ;
-
-        vTaskDelete() ;
-        taskRunning = false ;
+        vTaskDelete( instance.taskHandle ) ;
+        instance.taskRunning = false ;
 
     }
 public:
+    static constexpr uint32_t stopBit  { 0b1 } ;
+    static  unsigned long MAX_DELAY ;
 
     ~FREETask(){ 
         auto i{ 5 } ; 
@@ -50,7 +50,7 @@ public:
         : task( p_task ) , arg( p_arg ) , stackSize( p_stackSize ) , priority( p_priority ) {}
         
 
-    static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
+    static etl::optional< FREETask > create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  ;
 
     bool notify( const uint32_t message ) ;
 
@@ -64,7 +64,7 @@ public:
 
     static bool waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay );
 
-    static void waitMs( const uint32_t ms ) ;
+    static void waitMS( const uint32_t ms ) ;
 };
 
 static_assert( TaskConcept< FREETask > );

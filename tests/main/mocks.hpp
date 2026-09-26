@@ -35,45 +35,35 @@ struct DummyGroup{} ;
 struct DummyMember{} ;
 static_assert( EventGroupConcept < EventGroupMOCK< EventGroupHandle_t, EventBits_t   >> ) ;
 
+
+class StaticTaskMOCK{
+public:
+    MOCK_METHOD( ( bool ) , waitForNotify , ( const uint32_t message, const uint32_t delay)  )  ; 
+    MOCK_METHOD( ( void ) , waitMS , (  const uint32_t ms )) ;
+    MOCK_METHOD( ( bool ) , stopRequested , () ) ;
+};
+inline StaticTaskMOCK staticDummy {} ;
+
 class TaskMOCK {
 public:
 
 
-
-
-
     static etl::optional < TaskMOCK >  create (  void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority ){ return etl::optional< TaskMOCK >{ etl::in_place } ;}
-    MOCK_METHOD( (bool) , set , ( void (*task)(void*arg) , void * arg ,  const uint32_t stackSize , const uint32_t priority)) ;
-    MOCK_METHOD( ( void ) , notify , ( const uint32_t message )  ) ;
+    
+    MOCK_METHOD( ( bool ) , notify , ( const uint32_t message )  ) ;
     MOCK_METHOD( ( bool ) , requestStop  , ()) ;
     MOCK_METHOD( ( bool ) , join , ()) ;
-    MOCK_METHOD( ( bool ) , stop , ()) ;
     MOCK_METHOD( ( bool ) , start , ()) ;
 
-    static bool waitForNotify( const uint32_t token , const uint32_t message , const uint32_t delay){ return true ; }
-    static bool stopRequested( const uint32_t token ){ return  true; }
-    static void waitMS( const uint32_t token , const uint32_t ms ){  }
+    static bool waitForNotify(  const uint32_t message , const uint32_t delay){ return staticDummy.waitForNotify( message ,delay ) ; }
+    static bool stopRequested(){ return staticDummy.stopRequested() ; }
+    static void waitMS( const uint32_t ms ){ return staticDummy.waitMS( ms ) ;  }
 
     inline static uint32_t MAX_DELAY { 10000 };
 
 };
 static_assert( TaskConcept< TaskMOCK >  );
 
-class TaskPerspective{
-public:
-    bool waitForNotify( uint32_t token , uint32_t message, uint32_t delay){ return true ;  }
-    bool stopRequested( uint32_t token ){  return true; }
-    void waitMS( uint32_t token , uint32_t ms ) { }
-};
-
-class TaskPerspectiveMOCK{
-
-public:
-    MOCK_METHOD( ( bool ) , waitForNotify , (  uint32_t token , uint32_t message, uint32_t delay ));
-    MOCK_METHOD( ( bool ) , stopRequested ,  ( uint32_t token ));
-    MOCK_METHOD( ( bool ) , waitMS , ( uint32_t token , uint32_t ms ) );
-
-};
 
 class SensorMOCK {
 public:

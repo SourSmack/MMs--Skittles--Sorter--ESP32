@@ -16,7 +16,7 @@ protected:
     Nema< PlannerMOCK , StepperMOCK , TaskMOCK > nemaEngine{ 0 , 0 , planner , stepper , task } ;
     const motionBlock_t VALID_BLOCK { 1, 2, true };
     const motionBlock_t INVALID_BLOCK { 0, 0, false };
-    NemaTesting(){  nemaEngine.init() ; }
+    
 
 };
 
@@ -99,7 +99,7 @@ TEST_F( moveToCup , HappyPathNotEnqueue){
     
 
     EXPECT_CALL( planner , stop()).Times( 1 ) ;
-    auto i{ 0U } ;
+    
     EXPECT_CALL( planner , calculateFrequency( testing::_ ))
         .WillOnce( testing::Return( VALID_BLOCK ))
         .WillOnce( testing::Return( VALID_BLOCK ))

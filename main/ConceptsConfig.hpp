@@ -85,17 +85,19 @@ concept TaskConcept =
     //requires !std::destructible<T> ; // private/protected : ~T(){ .... } ;
 
     //{ Task.set( task , arg , stackSize , priority  ) } -> std::same_as< bool > ;
-    { Task.notify(  message )  }            -> std::same_as< void > ;
+    { Task.notify(  message )  }            -> std::same_as< bool > ;
     { Task.requestStop() }   -> std::same_as< bool > ;
     { Task.join() }          -> std::same_as< bool > ; 
-    { Task.stop() } -> std::same_as< bool > ;
     { Task.start() } -> std::same_as< bool > ;
 
 
     { T::waitForNotify( message ,  delay ) }  -> std::same_as< bool > ;
-    { T::stopRequested( message ) }   -> std::same_as< bool > ;
+    { T::stopRequested() }   -> std::same_as< bool > ;
     { T::waitMS( ms )} -> std::same_as<void> ;
     { T::MAX_DELAY } -> std::convertible_to< uint32_t > ;
+
+
+ 
 };
 
 template< class T > 

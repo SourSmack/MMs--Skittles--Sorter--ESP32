@@ -1,5 +1,6 @@
 idf_component_register(
-    SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp" "ScurvePlanner_test.cpp"  
+    SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp" "ScurvePlanner_test.cpp" "FREERTOSWrapper_test.cpp"
+
          #"Nema_test.cpp"
          "../../main/Sorter.hpp"
     INCLUDE_DIRS "." 
@@ -36,5 +37,11 @@ FetchContent_MakeAvailable(googletest)
 
 # 3. Linkowanie pobranego GMock do naszego komponentu testowego
 target_link_libraries(   ${COMPONENT_LIB}  PRIVATE gtest gmock magic_enum::magic_enum)
-target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,--whole-archive" "$<TARGET_FILE:${COMPONENT_LIB}>" "-Wl,--no-whole-archive")
+target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,--whole-archive" "$<TARGET_FILE:${COMPONENT_LIB}>" "-Wl,--no-whole-archive"
+    "-Wl,--wrap=xTaskCreatePinnedToCore"
+    "-Wl,--wrap=vTaskDelay"
+    "-Wl,--wrap=xTaskGenericNotify"
+    "-Wl,--wrap=xTaskGenericNotifyWait"
+    "-Wl,--wrap=vPortYield"
+)
 
