@@ -8,31 +8,53 @@
     void enqueue( const moveBlock_t motion);
   */  
 
-
-etl::optional< ScurvePlanner >  ScurvePlanner::create( ){
-    ScurvePlanner tmp{};
-
-    tmp.motionsQ = xQueueCreate( MAXBUFFOR , sizeof(motionBlock_t) );
-    if (! tmp.motionsQ) return etl::nullopt ;
-
-    if ( xTaskCreate( scurveTask , "scurveTask" , 1024 , &tmp , 4  , &tmp.scurveTaskHandle ) != pdPASS ) return etl::nullopt ;
+template< class T>
+etl::optional< ScurvePlanner<T>>  ScurvePlanner<T>::create(   T&& enqueueFunc   ){
+    ScurvePlanner tmp{ enqueueFunc };
+    
     return tmp ;
 }
 
+template< class T>
 void scurveTask(void * arg){
-    auto& [ instance, token  ] = *static_cast< etl::pair< ScurvePlanner* , uint16_t >*>( arg ) ;
-    auto& [ MAXBUFFOR , movesQ , taskHandle ] = instance ;
+    auto&  [ instance , enqueueFunc  ]   = *static_cast< ScurvePlanner* >( arg ) ;
+    auto& [ MAXBUFFOR , movesQ , args  taskHandle ] = instance ;
     
 
-    while ( !movesQ.empty()  && !FREETask::stopRequested( token )){
-
+    while ( !FREETask::stopRequested()){
+        if ( FREETask::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
+            while( FREETask::waitForNotify( ScurvePlanner<T>::resumeBit , 0 ){
+                taskYIELD();
+            } 
+        }
     }
     
     
 }
-void ScurvePlanner::calculateFrequency(const moveBlock_t &move)   
-{
 
 
-} 
 
+motionBlock_t calculateFrequency(const moveBlock_t &move   , motionBlock_t &destQue)   ; 
+bool stop(){
+    if ( taskHandle.stop() ) return true ;
+    return false ;
+}
+bool start(){
+    if ( tastHandle.start()) return true ;
+    return false; 
+}
+bool pause(){
+    if ( taskHandle.isRunning() ) return true ;
+    
+    
+
+}
+
+bool resume() {
+
+}
+
+void enqueue( const moveBlock_t motion){
+
+}
+    

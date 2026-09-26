@@ -27,6 +27,7 @@ bool FREETask::join(){
 }
 
 bool FREETask::start() {
+    if ( taskRunning) return true ;
     auto result  = xTaskCreate( _task , "task" , stackSize , arg  , priority , &taskHandle ) ;
     if ( result != pdPASS ) return false ; 
     return true; 
@@ -53,3 +54,7 @@ bool FREETask::waitForNotify( const uint32_t waitBitMask , const uint32_t p_dela
 void FREETask::waitMS( const uint32_t ms ) {
     vTaskDelay( pdMS_TO_TICKS( ms ) ) ;
 }
+
+
+
+bool isRunning(){ return taskRunning ; } 

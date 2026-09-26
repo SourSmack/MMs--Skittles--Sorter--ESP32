@@ -58,7 +58,7 @@ public:
     bool join();
 
     bool start() ;
-
+    bool isRunning();
 
     static bool stopRequested(   );
 
