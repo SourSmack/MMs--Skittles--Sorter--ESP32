@@ -24,7 +24,7 @@ private:
     static constexpr int MAXBUFFOR { 64 };
     etl::circular_buffer< InMove,  MAXBUFFOR > movesQ{} ; 
     
-    void (*destinationEnqueue)( const InMove &move ) { nullptr } ;
+    void (*destinationEnqueue)( const RESULT &move ) { nullptr } ;
 
     FREETask  taskHandle { nullptr } ;
     
@@ -39,10 +39,8 @@ private:
                     FREETask::yield();
                 } 
             }
-            auto motion = calculateFrequency< InMove >( movesQ.front() ; ) ;
+            calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
             movesQ.pop_front() ;
-            destinationEnqueue( motion );
-
 
         }
         
@@ -54,32 +52,33 @@ public:
     ScurvePlanner():  taskHandle( FREETask::create( scurveTask , this  , 2048 , 4 )) {}
     static etl::optional< ScurvePlanner >  create(  T&& enqueueFunc   );
 
-    template < class T > 
-    T calculateFrequency(const moveBlock_t &move , void ( desQue*)( const OutMove &move) = nullptr   ) {
-        static double time { 0 } ;
 
-        auto result = motion(  std::max( move.endSpeed , move.startSpeed ) , move.startAcc , move.startAcc  , move.steps , endSpeed ,  endAcc , time ) ; 
-        time += 0.1 ;
-        if ( time >= result.ct ){
-            time = 0 ;
-            OutMove finished{} ;
-            if ( desQue)
-                desQue( finished ) ;
+    void calculateFrequency(const moveBlock_t &move , inline void ( wrapperEnqueue*)( const RESULT &move) = nullptr   ) {
 
-            return finished ;
+        double time { 0 } ;
 
+        while ( times < result.ct ){
+            auto result = motion(
+                move.traversalSpeed,
+                move.maxAcc,       
+                move.startSpeed,    
+                move.startAcc,      
+                move.steps,         
+                move.endSpeed,      
+                move.start ,        
+                time                
+            );
+
+            time += 0.1 ;
+            wrapperEnqueue( result ) ;
         }
-        if ( desQue){
-            
-        }
-
-        return 
-
     }
 
-    bool stop();
+    bool stop(){
+        if ( !taskHandle.isRunning) return true ;
+    }
     
-    bool start(  void  ( enqueueAdapter*)( const OutMove &move) ) /* we should get recipe that converts from some randomEnqueue to enqueue that functions with our OutMove eand InMove*/ ){
+    bool start(  void  ( enqueueAdapter*)( const RESULT &move) ) /* we should get recipe that converts from some randomEnqueue to enqueue that functions with our OutMove eand InMove*/ ){
         if ( taskHandle.isRunning() ) return false ;
 
         destinationEnqueue = enqueueAdapter ; 
