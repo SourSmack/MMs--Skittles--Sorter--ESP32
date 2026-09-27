@@ -26,15 +26,7 @@ private:
 
 
 
-    static void _task( void * arg ){
-        auto &instance=  *static_cast<FREETask*>( arg ) ;
-        instance.taskRunning = true ;
-        instance.task( arg  ) ;
-
-        vTaskDelete( instance.taskHandle ) ;
-        instance.taskRunning = false ;
-
-    }
+    static void _task( void * arg );
 public:
     static constexpr uint32_t stopBit  { 0b1 } ;
     static  unsigned long MAX_DELAY ;
@@ -60,11 +52,13 @@ public:
     bool start() ;
     bool isRunning();
 
-    static bool stopRequested(   );
+    static bool stopRequested();
 
     static bool waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay );
 
     static void waitMS( const uint32_t ms ) ;
+
+    static void yield() ;
 };
 
 static_assert( TaskConcept< FREETask > );

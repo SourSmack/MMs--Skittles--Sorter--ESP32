@@ -17,16 +17,21 @@ etl::optional< ScurvePlanner<T>>  ScurvePlanner<T>::create(   T&& enqueueFunc   
 
 template< class T>
 void scurveTask(void * arg){
-    auto&  [ instance , enqueueFunc  ]   = *static_cast< ScurvePlanner* >( arg ) ;
-    auto& [ MAXBUFFOR , movesQ , args  taskHandle ] = instance ;
+    auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
+    auto& [ MAXBUFFOR , movesQ , enqueueMotion  taskHandle ] = instance ;
     
 
     while ( !FREETask::stopRequested()){
         if ( FREETask::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
             while( FREETask::waitForNotify( ScurvePlanner<T>::resumeBit , 0 ){
-                taskYIELD();
+                FREETask::yield();
             } 
         }
+        auto motion = calculateFrequency< motionBlock_t >( movesQ.front() ; ) ;
+        movesQ.pop_front() ;
+        enqueueMotion( motion );
+
+
     }
     
     
@@ -34,14 +39,18 @@ void scurveTask(void * arg){
 
 
 
-motionBlock_t calculateFrequency(const moveBlock_t &move   , motionBlock_t &destQue)   ; 
+template < class T > 
+T calculateFrequency(const moveBlock_t &move , void * desQue = nullptr   ) {
+    static int iteration{ 0 } ;
+    
+
+} 
+
 bool stop(){
     if ( taskHandle.stop() ) return true ;
     return false ;
 }
 bool start(){
-    if ( tastHandle.start()) return true ;
-    return false; 
 }
 bool pause(){
     if ( taskHandle.isRunning() ) return true ;

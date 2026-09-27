@@ -18,11 +18,8 @@ struct motionBlock_t
 
 struct moveBlock_t
 {
-    // which engine has to make move
-    
-    
-    
 
+    int steps ;
     // measureUnit / speedUnit^2 |   measureUnit^2 / speedUnit
     // describes accelaration and constant movement 
     float startAcc   , endAcc ; 
@@ -32,7 +29,7 @@ struct moveBlock_t
     // how many units to make with assigned speed in regards to part of the move (start,traversal,end) 
     int startSteps{0} , traversalSteps{0} , endSteps  {0}; 
 
-    constexpr moveBlock_t( int  steps , float ss =  0 , float sa = 5 , float ts = 100 , float es  = 0 , float ea = 5): startAcc(sa)  , endAcc(ea), startSpeed(ss) , traversalSpeed(ts) ,  endSpeed(es) {
+    constexpr moveBlock_t( int  steps , float ss =  0 , float sa = 5 , float ts = 100 , float es  = 0 , float ea = 5): steps( steps ) , startAcc(sa)  , endAcc(ea), startSpeed(ss) , traversalSpeed(ts) ,  endSpeed(es) {
 
         startSteps = (( ts * ts ) - ( ss * ss ))  / ( 2.0f*sa )  ; 
         endSteps =  (( es * es)  - ( ts * ts ))  / ( 2.0f * ea ); 

@@ -8,6 +8,16 @@ etl::optional< FREETask > FREETask::create( void (*task)(void*arg) , void * arg 
     return tmp;
 }
 
+ void FREETask::_task( void * arg ){
+        auto &instance=  *static_cast<FREETask*>( arg ) ;
+        instance.taskRunning = true ;
+        instance.task( arg  ) ;
+
+        vTaskDelete( instance.taskHandle ) ;
+        instance.taskRunning = false ;
+
+    }
+
 bool FREETask::notify( const uint32_t message )   {
     auto result = xTaskNotify( taskHandle , message , eSetBits ) ;
     if ( result != pdPASS) return false ; 
@@ -22,7 +32,7 @@ bool FREETask::requestStop()  {
 bool FREETask::join(){
     if ( !taskRunning ) return true ;
     if ( !requestStop() ) return false ;
-    while ( taskRunning ){ taskYIELD(); }
+    while ( taskRunning ){ FREETask::yield(); }
     return true  ;
 }
 
@@ -56,5 +66,8 @@ void FREETask::waitMS( const uint32_t ms ) {
 }
 
 
+void FREETask::yield(){
+    taskYIELD() ;
+}
 
 bool isRunning(){ return taskRunning ; } 
