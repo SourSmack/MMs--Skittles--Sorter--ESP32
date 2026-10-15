@@ -11,11 +11,11 @@
 #include <etl/bitset.h>
 #include "FreeRTOSWrapper.hpp"
 #include "scurve.h"
-template< class InMove , class OutMove >
+template< class InMove  >
 class ScurvePlanner 
 {
 private:
-
+    using OutMove = RESULT ;
     enum {
         stopBit  = 0 ,
         pauseBit = 1 << 1 ,
@@ -53,7 +53,7 @@ public:
     static etl::optional< ScurvePlanner >  create(  T&& enqueueFunc   );
 
 
-    void calculateFrequency(const moveBlock_t &move , inline void ( wrapperEnqueue*)( const RESULT &move) = nullptr   ) {
+    void calculateFrequency(const InMove &move , inline void ( wrapperEnqueue*)( const OutMove &move)    ) {
 
         double time { 0 } ;
 
@@ -76,6 +76,10 @@ public:
 
     bool stop(){
         if ( !taskHandle.isRunning) return true ;
+
+        if ( !taskHandle.join() ) return false ;
+
+        return true ;
     }
     
     bool start(  void  ( enqueueAdapter*)( const RESULT &move) ) /* we should get recipe that converts from some randomEnqueue to enqueue that functions with our OutMove eand InMove*/ ){
@@ -90,8 +94,25 @@ public:
         return true ; 
     }
 
-    bool pause() ;
-    bool resume() ;
-    void enqueue( const moveBlock_t motion);
+    // mechanism that DO NOT guarantee pause - it's task resposnible to implement proper while-loop with pause-statement 
+    bool pause() {
+        if ( !taskHandle.notify( pauseBit  ) ) return false ;
+
+        return true ;
+    }
+
+    // mechanism that DO NOT guarantee resume - it's task resposnible to implement proper while-loop with resume-statement 
+    bool resume() {
+        if ( !taskHandle.notify( resumeBit )) return false ;
+        return true ;
+    }
+
+    // Adds InMove to internal structure from which ScurveTask (taskHandle) takes motions to make 
+    bool enqueue( const InMove &motion){
+        if ( movesQ.full() ) return  false ;
+
+        movesQ.push_back( motion );
+        return true ;
+    }
     
 };
