@@ -70,4 +70,4 @@ void FREETask::yield(){
     taskYIELD() ;
 }
 
-bool isRunning(){ return taskRunning ; } 
+bool FREETask::isRunning(){ return taskRunning ; } 
