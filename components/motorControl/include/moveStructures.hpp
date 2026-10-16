@@ -19,12 +19,12 @@ struct motionBlock_t
 struct moveBlock_t
 {
 
-    double steps ;
+    double steps { 0 } ;
     // measureUnit / speedUnit^2 |   measureUnit^2 / speedUnit
     // describes accelaration and constant movement 
-    double startAcc   , maxAcc ,  endAcc ; 
+    double startAcc { 0 }  , maxAcc { 0  } ,  endAcc { 0} ; 
 
-    double startSpeed , traversalSpeed , endSpeed ; 
+    double startSpeed { 0  } , traversalSpeed { 0 } , endSpeed { 0 } ; 
 
     // how many units to make with assigned speed in regards to part of the move (start,traversal,end) 
     double startSteps{0} , traversalSteps{0} , endSteps  {0}; 

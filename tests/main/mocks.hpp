@@ -42,8 +42,7 @@ public:
     MOCK_METHOD( ( void ) , waitMS , (  const uint32_t ms )) ;
     MOCK_METHOD( ( bool ) , stopRequested , () ) ;
 };
-inline StaticTaskMOCK staticDummy {} ;
-
+StaticTaskMOCK staticMethodsTaskMOCK;
 class TaskMOCK {
 public:
 
@@ -55,15 +54,16 @@ public:
     MOCK_METHOD( ( bool ) , join , ()) ;
     MOCK_METHOD( ( bool ) , start , ()) ;
 
-    static bool waitForNotify(  const uint32_t message , const uint32_t delay){ return staticDummy.waitForNotify( message ,delay ) ; }
-    static bool stopRequested(){ return staticDummy.stopRequested() ; }
-    static void waitMS( const uint32_t ms ){ return staticDummy.waitMS( ms ) ;  }
+    static bool waitForNotify(  const uint32_t message , const uint32_t delay){ return staticMethodsTaskMOCK.waitForNotify( message ,delay ) ; }
+    static bool stopRequested(){ return staticMethodsTaskMOCK.stopRequested() ; }
+    static void waitMS( const uint32_t ms ){ return staticMethodsTaskMOCK.waitMS( ms ) ;  }
 
     inline static uint32_t MAX_DELAY { 10000 };
 
 };
 static_assert( TaskConcept< TaskMOCK >  );
 
+//inline TaskMOCK taskMockInstance {} ;
 
 class SensorMOCK {
 public:

@@ -7,7 +7,7 @@
     bool start();
     void enqueue( const moveBlock_t motion);
   */  
-
+/*
 template< class T>
 etl::optional< ScurvePlanner<T>>  ScurvePlanner<T>::create(   T&& enqueueFunc   ){
     ScurvePlanner tmp{ enqueueFunc };
@@ -66,4 +66,4 @@ bool resume() {
 void enqueue( const moveBlock_t motion){
 
 }
-    
+   */ 

@@ -7,15 +7,17 @@
 #include <etl/circular_buffer.h>
 #include "moveStructures.hpp"
 #include <etl/optional.h>
-#include <etl/pair.h>
-#include <etl/bitset.h>
+
+
 #include "FreeRTOSWrapper.hpp"
-#include "scurve.h"
-template< class InMove  >
+#include "s-curve-motion-planning/scurve.h"
+
+template< class InMove , class Task = FREETask  >
 class ScurvePlanner 
 {
 private:
-    using OutMove = RESULT ;
+    friend class ScurveTesting ;
+    using OutMove = Scurve::RESULT ;
     enum {
         stopBit  = 0 ,
         pauseBit = 1 << 1 ,
@@ -24,23 +26,28 @@ private:
     static constexpr int MAXBUFFOR { 64 };
     etl::circular_buffer< InMove,  MAXBUFFOR > movesQ{} ; 
     
-    void (*destinationEnqueue)( const RESULT &move ) { nullptr } ;
+    void (*destinationEnqueue)( const OutMove &move ) { nullptr } ;
 
-    FREETask  taskHandle { nullptr } ;
+    Task  taskHandle { nullptr } ;
     
     static void scurveTask(void * arg){
         auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
         auto& [ MAXBUFFOR , movesQ , destinationEnqueue ,   taskHandle ] = instance ;
         
 
-        while ( !FREETask::stopRequested()){
-            if ( FREETask::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
-                while( FREETask::waitForNotify( ScurvePlanner<T>::resumeBit , 0 ){
-                    FREETask::yield();
+        while ( !Task::stopRequested()){
+            if ( Task::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
+                while( Task::waitForNotify( ScurvePlanner<T>::resumeBit , 0 )){
+                    Task::yield();
                 } 
             }
-            calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
-            movesQ.pop_front() ;
+            if ( !movesQ.empty() ){
+                calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
+                movesQ.pop_front() ;
+            }
+            else {
+                Task::yield() ;
+            }
 
         }
         
@@ -49,11 +56,19 @@ private:
 
 public:
    
-    ScurvePlanner():  taskHandle( FREETask::create( scurveTask , this  , 2048 , 4 )) {}
-    static etl::optional< ScurvePlanner >  create(  T&& enqueueFunc   );
+    ScurvePlanner():  taskHandle( Task::create( scurveTask , this  , 2048 , 4 )) {}
+    ScurvePlanner( void (*pDestinationEnqueue)( const OutMove &move) ): 
+        destinationEnqueue( pDestinationEnqueue ) ,  
+        taskHandle( Task::create( scurveTask , this  , 2048 , 4 ) {}
+
+    static etl::optional< ScurvePlanner >  create(void (pDestinationEnqueue*)( const OutMove &move) ){
+        ScurvePlanner tmp{ pDestinationEnqueue };
+        return tmp ;
+    }
 
 
-    void calculateFrequency(const InMove &move , inline void ( wrapperEnqueue*)( const OutMove &move)    ) {
+    consteval void calculateFrequency(const InMove &move ,  void ( pEnqueue*)( const OutMove &move) =  nullptr     ) {
+        const auto destinationEnqueue = ( pEnqueue ) ? pEnqueue : ScurvePlanner::destinationEnqueue ;  
 
         double time { 0 } ;
 
@@ -70,7 +85,7 @@ public:
             );
 
             time += 0.1 ;
-            wrapperEnqueue( result ) ;
+            destinationEnqueue( result ) ;
         }
     }
 
