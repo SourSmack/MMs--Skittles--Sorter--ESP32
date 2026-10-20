@@ -53,6 +53,7 @@ public:
     MOCK_METHOD( ( bool ) , requestStop  , ()) ;
     MOCK_METHOD( ( bool ) , join , ()) ;
     MOCK_METHOD( ( bool ) , start , ()) ;
+    MOCK_METHOD( ( bool ) , isRunning , () ) ;
 
     static bool waitForNotify(  const uint32_t message , const uint32_t delay){ return staticMethodsTaskMOCK.waitForNotify( message ,delay ) ; }
     static bool stopRequested(){ return staticMethodsTaskMOCK.stopRequested() ; }

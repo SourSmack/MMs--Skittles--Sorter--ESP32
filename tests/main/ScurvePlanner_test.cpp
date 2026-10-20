@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "mocks.hpp"
 #include "ScurvePlanner.hpp"
+#include "moveStructures.hpp"
 
 
 
@@ -11,9 +12,10 @@ using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Mock;
 
+using RESULT = Scurve::RESULT ;
 
 
-struct Move {     
+/*struct Move {     
     double steps{ 0 } ;
     // measureUnit / speedUnit^2 |   measureUnit^2 / speedUnit
     // describes accelaration and constant movement 
@@ -24,7 +26,7 @@ struct Move {
     // how many units to make with assigned speed in regards to part of the move (start,traversal,end) 
     double startSteps{0} , traversalSteps{0} , endSteps  {0}; 
 
-};
+};*/
 
 
 class EnqueueCallbackMock {
@@ -43,9 +45,12 @@ void testAdapter(const RESULT& move) {
 
 class ScurveTesting : public ::testing::Test {
 protected:
+    TaskMOCK taskMock ;
+    ScurvePlanner< moveBlock_t ,  TaskMOCK > planner{ taskMock , testAdapter}; 
 
-    ScurvePlanner< Move, TaskMOCK > planner{testAdapter}; 
-
+    void runTask(){
+        ScurvePlanner< moveBlock_t, TaskMOCK >::scurveTask( &planner ) ;
+    }
     void SetUp() override {
         g_callbackMock = new EnqueueCallbackMock();
     }
@@ -66,7 +71,7 @@ using StartTest = ScurveTesting;
 
 
 TEST_F(StartTest, failsWhenTaskIsAlreadyRunning) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(true));
 
     EXPECT_FALSE(planner.start(testAdapter));
@@ -74,10 +79,10 @@ TEST_F(StartTest, failsWhenTaskIsAlreadyRunning) {
 
 // Krok 2: Wychodzi na `if ( !taskHandle.start() )`
 TEST_F(StartTest, failsWhenTaskStartFails) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(false));
     
-    EXPECT_CALL(planner.taskHandle, start())
+    EXPECT_CALL(taskMock, start())
         .WillOnce(Return(false));
 
     EXPECT_FALSE(planner.start(testAdapter));
@@ -85,10 +90,10 @@ TEST_F(StartTest, failsWhenTaskStartFails) {
 
 // Krok 3: Przechodzi wszystkie warunki (sukces)
 TEST_F(StartTest, succeedsWhenTaskStartsSuccessfully) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(false));
     
-    EXPECT_CALL(planner.taskHandle, start())
+    EXPECT_CALL(taskMock, start())
         .WillOnce(Return(true));
 
     EXPECT_TRUE(planner.start(testAdapter));
@@ -101,7 +106,7 @@ using StopTest = ScurveTesting;
 
 // Krok 1: Wychodzi na `if ( !taskHandle.isRunning() )`
 TEST_F(StopTest, succeedsImmediatelyIfNotRunning) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(false));
 
     EXPECT_TRUE(planner.stop());
@@ -109,10 +114,10 @@ TEST_F(StopTest, succeedsImmediatelyIfNotRunning) {
 
 // Krok 2: Wychodzi na `if ( !taskHandle.join() )`
 TEST_F(StopTest, failsIfTaskJoinFails) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(true));
         
-    EXPECT_CALL(planner.taskHandle, join())
+    EXPECT_CALL(taskMock, join())
         .WillOnce(Return(false));
 
     EXPECT_FALSE(planner.stop());
@@ -120,10 +125,10 @@ TEST_F(StopTest, failsIfTaskJoinFails) {
 
 // Krok 3: Przechodzi wszystkie warunki (sukces)
 TEST_F(StopTest, succeedsIfTaskJoinSucceeds) {
-    EXPECT_CALL(planner.taskHandle, isRunning())
+    EXPECT_CALL(taskMock, isRunning())
         .WillOnce(Return(true));
         
-    EXPECT_CALL(planner.taskHandle, join())
+    EXPECT_CALL(taskMock, join())
         .WillOnce(Return(true));
 
     EXPECT_TRUE(planner.stop());
@@ -136,23 +141,23 @@ using ControlBitsTest = ScurveTesting;
 
 // pauseBit w ScurvePlanner ma wartość 1 << 1 (czyli 2)
 TEST_F(ControlBitsTest, pauseFailsIfNotifyFails) {
-    EXPECT_CALL(planner.taskHandle, notify(2)).WillOnce(Return(false));
+    EXPECT_CALL(taskMock, notify(2)).WillOnce(Return(false));
     EXPECT_FALSE(planner.pause());
 }
 
 TEST_F(ControlBitsTest, pauseSucceedsIfNotifySucceeds) {
-    EXPECT_CALL(planner.taskHandle, notify(2)).WillOnce(Return(true));
+    EXPECT_CALL(taskMock, notify(2)).WillOnce(Return(true));
     EXPECT_TRUE(planner.pause());
 }
 
 // resumeBit ma wartość 1 << 2 (czyli 4)
 TEST_F(ControlBitsTest, resumeFailsIfNotifyFails) {
-    EXPECT_CALL(planner.taskHandle, notify(4)).WillOnce(Return(false));
+    EXPECT_CALL(taskMock, notify(4)).WillOnce(Return(false));
     EXPECT_FALSE(planner.resume());
 }
 
 TEST_F(ControlBitsTest, resumeSucceedsIfNotifySucceeds) {
-    EXPECT_CALL(planner.taskHandle, notify(4)).WillOnce(Return(true));
+    EXPECT_CALL(taskMock, notify(4)).WillOnce(Return(true));
     EXPECT_TRUE(planner.resume());
 }
 
@@ -163,13 +168,13 @@ using EnqueueTest = ScurveTesting;
 
 // Test podstawowy: przyjęcie ruchu
 TEST_F(EnqueueTest, successfullyQueuesMotion) {
-    InMove motion{};
+    moveBlock_t motion{};
     EXPECT_TRUE(planner.enqueue(motion));
 }
 
 // Test integracyjny bufora: zapełnianie krok po kroku
 TEST_F(EnqueueTest, fillsBufferAndRejectsExcess) {
-    InMove motion{};
+    moveBlock_t motion{};
     
     // Zapełniamy do limitu (MAXBUFFOR = 64)
     for (int i = 0; i < 64; ++i) {
@@ -205,9 +210,8 @@ TEST_F(TaskLoopTest, taskExitsOnStopRequest) {
             calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
             movesQ.pop_front() ;
             */
-
+    runTask() ;
    
-    ScurveTesting<InMove , TaskMOCK >::scurveTask( &planner ) ;
 }
 
 

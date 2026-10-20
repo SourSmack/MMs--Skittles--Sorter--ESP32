@@ -16,7 +16,6 @@ template< class InMove , class Task = FREETask  >
 class ScurvePlanner 
 {
 private:
-    friend class ScurveTesting ;
     using OutMove = Scurve::RESULT ;
     enum {
         stopBit  = 0 ,
@@ -28,16 +27,17 @@ private:
     
     void (*destinationEnqueue)( const OutMove &move ) { nullptr } ;
 
-    Task  taskHandle { nullptr } ;
+    Task  &taskHandle  ;
     
     static void scurveTask(void * arg){
-        auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
-        auto& [ MAXBUFFOR , movesQ , destinationEnqueue ,   taskHandle ] = instance ;
+        auto* instance = static_cast<ScurvePlanner*>(arg);
+        auto& movesQ = instance->movesQ;
+        auto& destinationEnqueue = instance->destinationEnqueue;
+        auto& taskHandle = instance->taskHandle;
         
-
         while ( !Task::stopRequested()){
-            if ( Task::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
-                while( Task::waitForNotify( ScurvePlanner<T>::resumeBit , 0 )){
+            if ( Task::waitForNotify( ScurvePlanner<InMove>::pauseBit , 0 )){
+                while( Task::waitForNotify( ScurvePlanner<InMove>::resumeBit , 0 )){
                     Task::yield();
                 } 
             }
@@ -55,24 +55,26 @@ private:
     }
 
 public:
+   friend class ScurveTesting ;
    
-    ScurvePlanner():  taskHandle( Task::create( scurveTask , this  , 2048 , 4 )) {}
-    ScurvePlanner( void (*pDestinationEnqueue)( const OutMove &move) ): 
-        destinationEnqueue( pDestinationEnqueue ) ,  
-        taskHandle( Task::create( scurveTask , this  , 2048 , 4 ) {}
+    //ScurvePlanner():  taskHandle( Task::create( scurveTask , this  , 2048 , 4 )) {}
+    ScurvePlanner(  Task  &task   , void (*pDestinationEnqueue)( const OutMove &move) = nullptr  )
+            :   destinationEnqueue( pDestinationEnqueue ) ,  
+                taskHandle(  task   ) 
+        {}
 
-    static etl::optional< ScurvePlanner >  create(void (pDestinationEnqueue*)( const OutMove &move) ){
-        ScurvePlanner tmp{ pDestinationEnqueue };
+    static etl::optional< ScurvePlanner >  create(Task &task , void (*pDestinationEnqueue)( const OutMove &move) ){
+        ScurvePlanner tmp{ task ,  pDestinationEnqueue };
         return tmp ;
     }
 
 
-    consteval void calculateFrequency(const InMove &move ,  void ( pEnqueue*)( const OutMove &move) =  nullptr     ) {
+    void calculateFrequency(const InMove &move ,  void ( *pEnqueue)( const OutMove &move) =  nullptr     ) {
         const auto destinationEnqueue = ( pEnqueue ) ? pEnqueue : ScurvePlanner::destinationEnqueue ;  
 
         double time { 0 } ;
-
-        while ( times < result.ct ){
+        OutMove result ;
+        while ( time < result.ct ){
             auto result = motion(
                 move.traversalSpeed,
                 move.maxAcc,       
@@ -90,19 +92,19 @@ public:
     }
 
     bool stop(){
-        if ( !taskHandle.isRunning) return true ;
+        if ( !taskHandle.isRunning() ) return true ;
 
         if ( !taskHandle.join() ) return false ;
 
         return true ;
     }
-    
-    bool start(  void  ( enqueueAdapter*)( const RESULT &move) ) /* we should get recipe that converts from some randomEnqueue to enqueue that functions with our OutMove eand InMove*/ ){
+    /* we should get recipe that converts from some randomEnqueue to enqueue that functions with our OutMove eand InMove*/ 
+    bool start(  void  ( *enqueueAdapter)( const OutMove &move) ) {
         if ( taskHandle.isRunning() ) return false ;
 
         destinationEnqueue = enqueueAdapter ; 
 
-        if ( !tastHandle.start()){
+        if ( !taskHandle.start()){
             destinationEnqueue = nullptr ;
             return false ;
         } 
