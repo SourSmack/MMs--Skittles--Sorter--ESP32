@@ -52,6 +52,7 @@ constexpr  etl::array<moveBlock_t , 6> cupsMoves{
     moveBlock_t { UNKNOWN_CUP_DEGREE_POS } 
 
 };
+
 auto UNKNOWN_CUP_IDX = cupsMoves.size() - 1 ;
 
 constexpr moveBlock_t flushCandy{ 2 }; 

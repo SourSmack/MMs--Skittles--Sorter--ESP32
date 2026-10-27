@@ -41,8 +41,9 @@ public:
     MOCK_METHOD( ( bool ) , waitForNotify , ( const uint32_t message, const uint32_t delay)  )  ; 
     MOCK_METHOD( ( void ) , waitMS , (  const uint32_t ms )) ;
     MOCK_METHOD( ( bool ) , stopRequested , () ) ;
+    MOCK_METHOD( ( void ) , yield , ()  ) ;
 };
-StaticTaskMOCK staticMethodsTaskMOCK;
+inline StaticTaskMOCK staticMethodsTaskMOCK;
 class TaskMOCK {
 public:
 
@@ -54,7 +55,9 @@ public:
     MOCK_METHOD( ( bool ) , join , ()) ;
     MOCK_METHOD( ( bool ) , start , ()) ;
     MOCK_METHOD( ( bool ) , isRunning , () ) ;
-
+    
+    
+    static void yield(){ staticMethodsTaskMOCK.yield() ; }
     static bool waitForNotify(  const uint32_t message , const uint32_t delay){ return staticMethodsTaskMOCK.waitForNotify( message ,delay ) ; }
     static bool stopRequested(){ return staticMethodsTaskMOCK.stopRequested() ; }
     static void waitMS( const uint32_t ms ){ return staticMethodsTaskMOCK.waitMS( ms ) ;  }

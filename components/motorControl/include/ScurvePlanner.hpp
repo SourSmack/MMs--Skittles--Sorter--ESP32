@@ -33,17 +33,17 @@ private:
         auto* instance = static_cast<ScurvePlanner*>(arg);
         auto& movesQ = instance->movesQ;
         auto& destinationEnqueue = instance->destinationEnqueue;
-        auto& taskHandle = instance->taskHandle;
+        
         
         while ( !Task::stopRequested()){
-            if ( Task::waitForNotify( ScurvePlanner<InMove>::pauseBit , 0 )){
-                while( Task::waitForNotify( ScurvePlanner<InMove>::resumeBit , 0 )){
+            if ( Task::waitForNotify( ScurvePlanner::pauseBit , 0 )){
+                while( Task::waitForNotify( ScurvePlanner::resumeBit , 0 )){
                     Task::yield();
                 } 
             }
             if ( !movesQ.empty() ){
-                calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
-                movesQ.pop_front() ;
+                instance->calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
+                movesQ.pop() ;
             }
             else {
                 Task::yield() ;
@@ -70,19 +70,20 @@ public:
 
 
     void calculateFrequency(const InMove &move ,  void ( *pEnqueue)( const OutMove &move) =  nullptr     ) {
+        static Scurve calc{} ; 
         const auto destinationEnqueue = ( pEnqueue ) ? pEnqueue : ScurvePlanner::destinationEnqueue ;  
 
         double time { 0 } ;
         OutMove result ;
         while ( time < result.ct ){
-            auto result = motion(
+            auto result = calc.motion(
                 move.traversalSpeed,
                 move.maxAcc,       
                 move.startSpeed,    
                 move.startAcc,      
                 move.steps,         
                 move.endSpeed,      
-                move.start ,        
+                move.endAcc ,        
                 time                
             );
 
@@ -128,7 +129,7 @@ public:
     bool enqueue( const InMove &motion){
         if ( movesQ.full() ) return  false ;
 
-        movesQ.push_back( motion );
+        movesQ.push( motion );
         return true ;
     }
     

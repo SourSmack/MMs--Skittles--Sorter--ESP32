@@ -193,8 +193,15 @@ using TaskLoopTest = ScurveTesting;
 // Testujemy, czy funkcja Taska zatrzyma się, gdy `stopRequested()` zwróci true
 TEST_F(TaskLoopTest, taskExitsOnStopRequest) {
     // Od razu przy pierwszym sprawdzeniu warunku pętli zwracamy "true"
+    testing::InSequence seq ; 
+    EXPECT_CALL(staticMethodsTaskMOCK, stopRequested())
+        .WillOnce(Return(false));
+
+    EXPECT_CALL( staticMethodsTaskMOCK , waitForNotify( _ , _ )).WillOnce( Return( false )) ;
+
     EXPECT_CALL(staticMethodsTaskMOCK, stopRequested())
         .WillOnce(Return(true));
+
 
  /*    static void scurveTask(void * arg){
         auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
