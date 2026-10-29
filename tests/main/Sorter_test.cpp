@@ -144,7 +144,7 @@ TEST_F( DisksHomingTest  , sensorDONTDetectsUnder5thAttempts ){
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    EXPECT_CALL( eventFlags , bitsWait( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
+    EXPECT_CALL( eventFlags , waitBits( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillRepeatedly( testing::Return( false )) ;
     EXPECT_CALL( disksEng , stop() ).Times(1).WillOnce( testing::Return( true )); 
 
@@ -163,7 +163,7 @@ TEST_F( SlideHomingTest , sensorDONTDetectsUnder5thAttempts ){
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    EXPECT_CALL( eventFlags , bitsWait( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
+    EXPECT_CALL( eventFlags , waitBits( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillRepeatedly( testing::Return( false )) ;
     
     EXPECT_CALL( slideEng , stop() ).Times(1).WillOnce( testing::Return( true )); 
@@ -182,7 +182,7 @@ TEST_F( DisksHomingTest  , sensorDetectsUnder5thAttempts ){
 
     EXPECT_CALL( disksEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    EXPECT_CALL( eventFlags , bitsWait( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
+    EXPECT_CALL( eventFlags , waitBits( BIT_DISKSSENSOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillOnce( testing::Return( false ))
         .WillOnce( testing::Return( false ))
         .WillOnce( testing::Return( true ))
@@ -207,7 +207,7 @@ TEST_F( SlideHomingTest , sensorDetectsUnder5thAttempts ){
 
     EXPECT_CALL( slideEng , moveImpl( testing::_ , testing::_ , testing::_ ) ).Times(1);
 
-    EXPECT_CALL( eventFlags , bitsWait( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
+    EXPECT_CALL( eventFlags , waitBits( BIT_TRANSOPTOR_INPUT , mockEventFlags::MAX_DELAY ) )
         .WillOnce( testing::Return( false ))
         .WillOnce( testing::Return( false ))
         .WillOnce( testing::Return( true ))

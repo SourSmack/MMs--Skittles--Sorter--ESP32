@@ -26,7 +26,7 @@ public:
         return At(idx);
     }
 
-    MOCK_METHOD( ( bool )  ,  bitsWait   , ( const uint32_t message, const uint32_t delay));
+    MOCK_METHOD( ( bool )  ,  waitBits   , ( const uint32_t message, const uint32_t delay));
     inline static  uint32_t MAX_DELAY { 1000 } ; 
 };
 

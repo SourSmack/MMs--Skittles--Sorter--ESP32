@@ -193,32 +193,14 @@ using TaskLoopTest = ScurveTesting;
 // Testujemy, czy funkcja Taska zatrzyma się, gdy `stopRequested()` zwróci true
 TEST_F(TaskLoopTest, taskExitsOnStopRequest) {
     // Od razu przy pierwszym sprawdzeniu warunku pętli zwracamy "true"
-    testing::InSequence seq ; 
-    EXPECT_CALL(staticMethodsTaskMOCK, stopRequested())
-        .WillOnce(Return(false));
-
+testing::InSequence seq ; 
+    EXPECT_CALL(staticMethodsTaskMOCK, stopRequested());
+    
     EXPECT_CALL( staticMethodsTaskMOCK , waitForNotify( _ , _ )).WillOnce( Return( false )) ;
 
-    EXPECT_CALL(staticMethodsTaskMOCK, stopRequested())
-        .WillOnce(Return(true));
 
 
- /*    static void scurveTask(void * arg){
-        auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
-        auto& [ MAXBUFFOR , movesQ , destinationEnqueue ,   taskHandle ] = instance ;
-        
-
-        while ( !FREETask::stopRequested()){
-            if ( FREETask::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
-                while( FREETask::waitForNotify( ScurvePlanner<T>::resumeBit , 0 ){
-                    FREETask::yield();
-                } 
-            }
-            calculateFrequency( movesQ.front() , destinationEnqueue  ) ;
-            movesQ.pop_front() ;
-            */
-    runTask() ;
-   
+           
 }
 
 

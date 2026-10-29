@@ -172,7 +172,7 @@ public:
         
 
         auto i{4} ;
-        while ( --i && !eventGroup.bitsWait( BIT_DISKSSENSOR_INPUT , EventFlagsType::MAX_DELAY )){}
+        while ( --i && !eventGroup.waitBits( BIT_DISKSSENSOR_INPUT , EventFlagsType::MAX_DELAY )){}
         if ( !i ){
             if ( !disksEngine.stop() ) 
                 return ErrCode::eventGroup | ErrCode::disksEngine ;
@@ -197,7 +197,7 @@ public:
         slideEngine.move( spinForever ) ;
 
         auto i{4} ;
-        while ( --i && !eventGroup.bitsWait( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
+        while ( --i && !eventGroup.waitBits( BIT_TRANSOPTOR_INPUT , EventFlagsType::MAX_DELAY )){}
         if ( !i ){
             if ( !slideEngine.stop() ) 
                 return ErrCode::eventGroup | ErrCode::slideEngine ;

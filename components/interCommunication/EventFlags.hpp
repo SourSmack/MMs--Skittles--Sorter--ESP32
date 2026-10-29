@@ -13,9 +13,13 @@ private:
 public:
     using GroupType  = T ; 
     using MembersType = N ;
-    //etl::array< MemberType T::* , 32 > mm
+    
     static etl::optional< EventGroup > create(T &p_eventGroup ,  uint32_t bits ){
         return etl::optional< EventGroup >{ etl::in_place }  ;
+    }
+
+    EventGroup( T &p_eventGroup ,  uint32_t bits ): eventGroup_t(p_eventGroup) ,  {
+
     }
 
     etl::optional< MembersType > operator[](uint32_t idx){
@@ -24,7 +28,14 @@ public:
         return pEventGropu.*(memberMap[idx]);
     };
 
-    bool bitsWait(   uint32_t message , uint32_t delay) ; 
+    bool waitBits(   uint32_t message , uint32_t delay) {
+
+    } 
+
+
+    static bool setBits( uint32_t message ){
+
+    }
     
 };
 
