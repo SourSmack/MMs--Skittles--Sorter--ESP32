@@ -16,7 +16,7 @@ concept EventGroupConcept = requires(   T EventGroup , const T  ConstEventGroup 
                                         const uint32_t message , const uint32_t delay ){
     //requires  std::constructible_from< T , EventGroupType , etl::array<  EventGroupMembersType EventGroupType::* , 32 >> ;
     //{ T::create( p_eventGroup,  flagsBits )} -> std::same_as< etl::optional< T >> ;
-    { EventGroup.operator[]( idx ) } -> std::same_as< etl::optional< typename T:: MembersType >> ;
+    
     { EventGroup.waitBits( message , delay ) } -> std::same_as< bool > ;
     { T::MAX_DELAY } -> std::convertible_to< uint32_t > ;
     

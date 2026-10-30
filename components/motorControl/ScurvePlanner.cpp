@@ -1,69 +1,109 @@
-#include "include/ScurvePlanner.hpp"
-#include "scurve.h"
-/* ScurvePlanner(): taskHandle( FREETask::create( scurveTask , this , 2048 , 4 )) {}
-   // static etl::optional< ScurvePlanner >  create();
-    motionBlock_t calculateFrequency(const moveBlock_t &move   , motionBlock_t &destQue)   ; 
-    bool stop();
-    bool start();
-    void enqueue( const moveBlock_t motion);
-  */  
-/*
-template< class T>
-etl::optional< ScurvePlanner<T>>  ScurvePlanner<T>::create(   T&& enqueueFunc   ){
-    ScurvePlanner tmp{ enqueueFunc };
-    
-    return tmp ;
-}
 
-template< class T>
-void scurveTask(void * arg){
-    auto& [ instance ]   = *static_cast< ScurvePlanner* >( arg ) ;
-    auto& [ MAXBUFFOR , movesQ , enqueueMotion  taskHandle ] = instance ;
-    
+#include "ScurvePlanner.hpp"
 
-    while ( !FREETask::stopRequested()){
-        if ( FREETask::waitForNotify( ScurvePlanner<T>::pauseBit , 0 )){
-            while( FREETask::waitForNotify( ScurvePlanner<T>::resumeBit , 0 ){
-                FREETask::yield();
+template< class InMove, class Task >
+void ScurvePlanner<InMove, Task>::scurveTask(void *arg)
+{
+    auto* instance = static_cast<ScurvePlanner*>(arg);
+    auto& movesQ = instance->movesQ;
+    auto& destinationEnqueue = instance->destinationEnqueue;
+    
+    while (!Task::stopRequested()) {
+        if (Task::waitForNotify(ScurvePlanner::pauseBit, 0)) {
+            while (Task::waitForNotify(ScurvePlanner::resumeBit, 0)) {
+                Task::yield();
             } 
         }
-        auto motion = calculateFrequency< motionBlock_t >( movesQ.front() ; ) ;
-        movesQ.pop_front() ;
-        enqueueMotion( motion );
-
-
+        if (!movesQ.empty()) {
+            instance->calculateFrequency(movesQ.front(), destinationEnqueue);
+            movesQ.pop();
+        } else {
+            Task::yield();
+        }
     }
-    
-    
 }
 
+template< class InMove, class Task >
+ScurvePlanner<InMove, Task>::ScurvePlanner(Task &task, void (*pDestinationEnqueue)(const OutMove &move))
+    : destinationEnqueue(pDestinationEnqueue), 
+      taskHandle(task) 
+{}
 
+template< class InMove, class Task >
+etl::optional<ScurvePlanner<InMove, Task>> ScurvePlanner<InMove, Task>::create(Task &task, void (*pDestinationEnqueue)(const OutMove &move))
+{
+    ScurvePlanner tmp{task, pDestinationEnqueue};
+    return tmp;
+}
 
-template < class T > 
-T calculateFrequency(const moveBlock_t &move , void * desQue = nullptr   ) {
-    static int iteration{ 0 } ;
+template< class InMove, class Task >
+void ScurvePlanner<InMove, Task>::calculateFrequency(const InMove &move, void (*pEnqueue)(const OutMove &move))
+{
+    static Scurve calc{}; 
+    const auto destinationEnqueue = (pEnqueue) ? pEnqueue : ScurvePlanner::destinationEnqueue;  
+
+    double time { 0 };
+    OutMove res;
     
+    do{
+        auto res = calc.motion(
+            move.traversalSpeed,
+            move.maxAcc,       
+            move.startSpeed,    
+            move.startAcc,      
+            move.steps,         
+            move.endSpeed,      
+            move.endAcc,        
+            time                
+        );
 
+        time += 0.1;
+        destinationEnqueue(res);
+    }while ( time < res.ct ) ;
+
+}
+
+template< class InMove, class Task >
+bool ScurvePlanner<InMove, Task>::stop()
+{
+    if (!taskHandle.isRunning()) return true;
+    if (!taskHandle.join()) return false;
+    return true;
+}
+
+template< class InMove, class Task >
+bool ScurvePlanner<InMove, Task>::start(void (*enqueueAdapter)(const OutMove &move))
+{
+    if (taskHandle.isRunning()) return false;
+
+    destinationEnqueue = enqueueAdapter; 
+
+    if (!taskHandle.start()) {
+        destinationEnqueue = nullptr;
+        return false;
+    } 
+    return true; 
+}
+
+template< class InMove, class Task >
+bool ScurvePlanner<InMove, Task>::pause()
+{
+    if (!taskHandle.notify(pauseBit)) return false;
+    return true;
+}
+
+template< class InMove, class Task >
+bool ScurvePlanner<InMove, Task>::resume()
+{
+    if (!taskHandle.notify(resumeBit)) return false;
+    return true;
+}
+
+template< class InMove, class Task >
+bool ScurvePlanner<InMove, Task>::enqueue(const InMove &motion)
+{
+    if (movesQ.full()) return false;
+
+    movesQ.push(motion);
+    return true;
 } 
-
-bool stop(){
-    if ( taskHandle.stop() ) return true ;
-    return false ;
-}
-bool start(){
-}
-bool pause(){
-    if ( taskHandle.isRunning() ) return true ;
-    
-    
-
-}
-
-bool resume() {
-
-}
-
-void enqueue( const moveBlock_t motion){
-
-}
-   */ 

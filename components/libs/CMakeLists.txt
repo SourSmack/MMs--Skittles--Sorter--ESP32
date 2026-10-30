@@ -5,10 +5,10 @@ if(IDF_TARGET STREQUAL "linux")
     # Rejestrujemy komponent jako czysto nagłówkowy (header-only).
     # Nie ładujemy żadnych plików .cpp ze sterownikami silników
     # ani nie żądamy systemowego komponentu 'driver'.
-idf_component_register(
-        SRCS "s-curve-motion-planning/scurve.cpp" # <--- WYMUSZAMY kompilację logiki S-Curve na Linuxie
-        INCLUDE_DIRS "."
-                     "etl/include"
+    idf_component_register(
+            SRCS "s-curve-motion-planning/scurve.cpp" # <--- WYMUSZAMY kompilację logiki S-Curve na Linuxie
+            INCLUDE_DIRS "."
+                        "etl/include"
     )
 else()
     # ---------------------------------------------------------
