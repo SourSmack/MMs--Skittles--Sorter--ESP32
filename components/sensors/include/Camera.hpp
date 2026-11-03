@@ -9,8 +9,21 @@
 
 #define COLORSENSOR_WORD_SIZE 20 
 
+enum {
+    Basic 
+
+}
+template < class  Mode > 
 class Uart{
 public:
+
+    int send(  .. . ) {
+        Mode
+    } 
+    int recieve( ... ) ; 
+    bool stop() ; 
+    bool start() ; 
+
 
 }
 
