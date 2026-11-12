@@ -6,7 +6,7 @@ idf_component_register(
     INCLUDE_DIRS "." 
                  "../../main"
                 "../../components/motorControl/include/"
-    REQUIRES freertos interCommunication libs 
+    REQUIRES freertos InlineOS libs 
 )
 include(FetchContent)
 FetchContent_Declare(

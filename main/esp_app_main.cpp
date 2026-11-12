@@ -21,8 +21,8 @@
 
 
 using genericSorter = Sorter< 
-                        Nema< ScurvePlanner , FREETask > ,
-                        Nema< ScurvePlanner , FREETask > , 
+                        Nema< ScurvePlanner , Mission > ,
+                        Nema< ScurvePlanner , Mission > , 
                         Camera , 
                         EventGroupIsrTransoptor  , 
                         EventGroup < EventGroupHandle_t , EventBits_t  >
@@ -80,7 +80,7 @@ struct UserHardwareConfiguration
 
     etl::optional< EventGroup<EventGroupHandle_t , EventBits_t >>   eventFlags;
     
-    etl::optional< FREETask > sortingTask ; 
+    etl::optional< Mission > sortingTask ; 
 
     etl::optional< SensorConcept EventGroupIsrTransoptor >  slideSensor ;
     etl::optional< Nema< PlannerConcept Planner , StepperConcept Stepper , TaskConcept Task >>  slideEngine ; 

@@ -1,15 +1,15 @@
 #include "FreeRTOSWrapper.hpp"
 
-unsigned long FREETask::MAX_DELAY = portMAX_DELAY;
+unsigned long Mission::MAX_DELAY = portMAX_DELAY;
 
-etl::optional< FREETask > FREETask::create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
-    FREETask tmp{ task ,arg , stackSize , priority } ;
+etl::optional< Mission > Mission::create( void (*task)(void*arg) , void * arg ,  uint32_t stackSize , uint32_t priority )  {
+    Mission tmp{ task ,arg , stackSize , priority } ;
     
     return tmp;
 }
 
- void FREETask::_task( void * arg ){
-        auto &instance=  *static_cast<FREETask*>( arg ) ;
+ void Mission::_task( void * arg ){
+        auto &instance=  *static_cast<Mission*>( arg ) ;
         instance.taskRunning = true ;
         instance.task( arg  ) ;
 
@@ -18,25 +18,25 @@ etl::optional< FREETask > FREETask::create( void (*task)(void*arg) , void * arg 
 
     }
 
-bool FREETask::notify( const uint32_t message )   {
+bool Mission::notify( const uint32_t message )   {
     auto result = xTaskNotify( taskHandle , message , eSetBits ) ;
     if ( result != pdPASS) return false ; 
     return true ;
 }
 
-bool FREETask::requestStop()  {
+bool Mission::requestStop()  {
     auto result = xTaskNotify( taskHandle , stopBit , eSetBits  ) ;
     if ( result != pdPASS) return false ; 
     return true ;
 }
-bool FREETask::join(){
+bool Mission::join(){
     if ( !taskRunning ) return true ;
     if ( !requestStop() ) return false ;
-    while ( taskRunning ){ FREETask::yield(); }
+    while ( taskRunning ){ Mission::yield(); }
     return true  ;
 }
 
-bool FREETask::start() {
+bool Mission::start() {
     if ( taskRunning) return true ;
     auto result  = xTaskCreate( _task , "task" , stackSize , arg  , priority , &taskHandle ) ;
     if ( result != pdPASS ) return false ; 
@@ -44,13 +44,13 @@ bool FREETask::start() {
 } 
 
 
-bool FREETask::stopRequested(   ){
+bool Mission::stopRequested(   ){
     uint32_t result { 0 } ;
     if ( !xTaskNotifyWait( 0 , stopBit ,  &result , 0  )) return false ;
     if ( result & stopBit ) return true ;
     return false ;
 }
-bool FREETask::waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay ){
+bool Mission::waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay ){
     uint32_t result { 0 } ;
     auto delay = ( p_delay == MAX_DELAY ) ? (  portMAX_DELAY ) : pdMS_TO_TICKS( p_delay ) ;
     if ( !xTaskNotifyWait( 0 ,  waitBitMask , &result , delay )) return false ;
@@ -61,13 +61,13 @@ bool FREETask::waitForNotify( const uint32_t waitBitMask , const uint32_t p_dela
 
 }
 
-void FREETask::waitMS( const uint32_t ms ) {
+void Mission::waitMS( const uint32_t ms ) {
     vTaskDelay( pdMS_TO_TICKS( ms ) ) ;
 }
 
 
-void FREETask::yield(){
+void Mission::yield(){
     taskYIELD() ;
 }
 
-bool FREETask::isRunning(){ return taskRunning ; } 
+bool Mission::isRunning(){ return taskRunning ; } 
