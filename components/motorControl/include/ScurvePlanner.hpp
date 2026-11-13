@@ -6,7 +6,7 @@
 #include <etl/optional.h>
 
 #include "moveStructures.hpp"
-#include "FreeRTOSWrapper.hpp"
+#include "Mission.hpp"
 #include "s-curve-motion-planning/scurve.h"
 
 template< class InMove, class Task = FREETask >
