@@ -1,31 +1,12 @@
 #pragma once
 
-#include "driver/uart.h"
 #include "freertos/idf_additions.h"
 #include <cstdint>
 #include <etl/string.h>
-
+#include "AGUA/SynchUartEsp.hpp"
 
 
 #define COLORSENSOR_WORD_SIZE 20 
-
-enum {
-    Basic 
-
-}
-template < class  Mode > 
-class Uart{
-public:
-
-    int send(  .. . ) {
-        Mode
-    } 
-    int recieve( ... ) ; 
-    bool stop() ; 
-    bool start() ; 
-
-
-}
 
 class Camera  
 {

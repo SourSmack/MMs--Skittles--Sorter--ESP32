@@ -1,0 +1,3 @@
+dependencies:
+  gin66/FastAccelStepper:
+    git: https://github.com/gin66/FastAccelStepper.git

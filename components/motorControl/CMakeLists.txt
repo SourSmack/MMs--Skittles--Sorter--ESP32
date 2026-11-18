@@ -3,7 +3,7 @@ idf_component_register(
     
         "ScurvePlanner.cpp" "FastAccelWrappper.cpp"
     INCLUDE_DIRS 
-        "include"               # Udostępnia folder include/ na zewnątrz
+        "include"               
     REQUIRES 
-        libs driver freertos InlineOS     # Zależności prywatne (potrzebne tylko w .cpp)
+    external    gin66__FastAccelStepper 
 )
