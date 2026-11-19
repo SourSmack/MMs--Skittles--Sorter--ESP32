@@ -1,12 +1,11 @@
 idf_component_register(
     SRCS  "start_tests.cpp" "Sorter_test.cpp" "Nema_test2.cpp" "ScurvePlanner_test.cpp" "FREERTOSWrapper_test.cpp"
 
-         #"Nema_test.cpp"
          "../../main/Sorter.hpp"
-    INCLUDE_DIRS "." 
-                 "../../main"
-                "../../components/motorControl/include/"
-    REQUIRES freertos InlineOS libs 
+    INCLUDE_DIRS 
+        "." 
+         "../../main"
+         REQUIRES freertos external  motorControl  sensors esp_driver_gpio
 )
 include(FetchContent)
 FetchContent_Declare(

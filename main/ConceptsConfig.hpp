@@ -1,6 +1,6 @@
 
 #pragma once
-#include "../components/motorControl/include/moveStructures.hpp"
+#include "moveStructures.hpp"
 #include <concepts>
 #include "etl/optional.h"
 #include "etl/array.h"

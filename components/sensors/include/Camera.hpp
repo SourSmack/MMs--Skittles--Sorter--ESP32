@@ -3,7 +3,7 @@
 #include "freertos/idf_additions.h"
 #include <cstdint>
 #include <etl/string.h>
-#include "AGUA/SynchUartEsp.hpp"
+#include "SynchEsp.hpp"
 
 
 #define COLORSENSOR_WORD_SIZE 20 

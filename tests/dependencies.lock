@@ -1,0 +1,8 @@
+dependencies:
+  idf:
+    source:
+      type: idf
+    version: 6.0.2
+manifest_hash: 45bdff6801c788eea3aaa3a94c7e8773e37f034e33bf9ac95681120985afd132
+target: linux
+version: 3.0.0

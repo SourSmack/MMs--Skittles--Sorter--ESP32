@@ -3,11 +3,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include <etl/optional.h>
-#include "ISensor.hpp"
 #include "driver/gpio.h"
 
 
-class EventGroupIsrTransoptor : public ISensor 
+class EventGroupIsrTransoptor  
 {
 private:
     uint32_t phototransistorPin;
