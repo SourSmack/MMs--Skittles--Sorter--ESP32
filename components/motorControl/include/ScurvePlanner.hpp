@@ -7,7 +7,7 @@
 
 #include "moveStructures.hpp"
 #include "Mission.hpp"
-#include "s-curve-motion-planning/scurve.h"
+#include "scurve.h"
 
 template< class InMove, class Task = FREETask >
 class ScurvePlanner 
