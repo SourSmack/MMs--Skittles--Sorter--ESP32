@@ -80,7 +80,7 @@ void IRAM_ATTR EventGroupIsrTransoptor::isrHandler(  void * arg){
                 &xHigherPriorityTaskWoken ) ;
                 
     if (result == pdPASS && xHigherPriorityTaskWoken == pdTRUE) 
-        portYIELD_FROM_ISR();
+        portYIELD_FROM_ISR( xHigherPriorityTaskWoken);
 
 }
 

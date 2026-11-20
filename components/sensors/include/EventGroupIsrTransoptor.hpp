@@ -28,18 +28,18 @@ private:
 
    static void isrHandler( void* arg ) ; 
 public: 
-    EventGroupIsrTransoptor() = delete ;
     
-    static etl::EventFlags< EventGroupIsrTransoptor > create(uint32_t photoPin , uint32_t emitPin , EventGroupHandle_t &evtGrp , EventBits_t evtBits ); 
+    static etl::optional< EventGroupIsrTransoptor > create(uint32_t photoPin , uint32_t emitPin , EventGroupHandle_t &evtGrp , EventBits_t evtBits ); 
     
 
-    bool listenIT() override ;
+    bool listenIT()  ;
     
-    const void* getSample()const override  ;
-    bool stopListeningIT() override  ;
+    const void* getSample()const   ;
+    bool stopListeningIT()   ;
 
-    bool turnOn()override  ;
-    bool turnOff()override  ;
+
+    bool turnOn();
+    bool turnOff()  ;
     
 
 
