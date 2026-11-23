@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <etl/string.h>
 #include "SynchEsp.hpp"
+#include "EventGroup.hpp"
 
 
 #define COLORSENSOR_WORD_SIZE 20 
@@ -19,7 +20,7 @@ private:
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE , 
         .source_clk = UART_SCLK_APB   */ 
      
-    pc_uart_config_t cameraUart ; 
+    uart_config_t cameraUart ; 
     uart_port_t  uartNum ;  
     int buffsize ; 
     int rxPin  ;
