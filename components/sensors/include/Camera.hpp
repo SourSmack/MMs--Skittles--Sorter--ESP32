@@ -28,7 +28,7 @@ private:
     int queSize ;
     QueueHandle_t queHandle { nullptr }; 
 
-    EventGroup eventGroup ;
+    EventGroup<EventGroupHandle_t> eventGroup ;
     EventBits_t  colorSensorBit ; 
 
     FREETask task ;
