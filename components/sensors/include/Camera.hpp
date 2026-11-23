@@ -6,11 +6,14 @@
 #include "freertos/idf_additions.h"
 #include "driver/uart.h"
 #include <etl/string.h>
-#include <etl/event_flags.h>
 #include "SynchEsp.hpp"
 #include "EventGroup.hpp"
+#include "EventQueue.hpp"
+#include "etl/optional.h"
 
 #define COLORSENSOR_WORD_SIZE 20
+
+using pc_uart_config_t = uart_config_t;
 
 class Camera
 {
@@ -21,16 +24,13 @@ private:
     int rxPin;
     int txPin;
     int queSize;
-    QueueHandle_t queHandle{nullptr};
 
+    EventQueue<QueueHandle_t> queHandle{nullptr};
     EventGroup<EventGroupHandle_t> eventGroup;
-    EventBits_t colorSensorBit;
-
-    FREETask task;
 
     etl::string<COLORSENSOR_WORD_SIZE> last_word;
 
-    static void uartTask(void *arg)
+   /* static void uartTask(void *arg)
     {
         auto instance = static_cast<Camera *>(arg);
 
@@ -71,21 +71,18 @@ private:
 
             instance->eventGroup.setBits(instance->colorSensorBit);
         }
-    }
+    }*/
 
-    Camera(int buffsize, int queSize);
 
 public:
-    bool uartConfiguration(pc_uart_config_t uartConfig,
+    /*bool uartConfiguration(uart_config_t uartConfig,
                            uart_port_t uartNum,
                            int buffsize,
                            int rxPin,
                            int txPin,
                            int queSize,
-                           QueueHandle_t queHandle,
-                           EventGroup<EventGroupHandle_t> &p_eventGroup,
-                           EventBits_t eb,
-                           FREETask &task)
+                           EventQueue<QueueHandle_t> queHandle,
+                           EventGroup<EventGroupHandle_t> &p_eventGroup)
     {
         if (uartConfig.baud_rate == 0)
         {
@@ -97,27 +94,26 @@ public:
             uartConfig.stop_bits = UART_STOP_BITS_1;
         }
 
-        this->uartNum = uartNum;
-        this->cameraUart = uartConfig;
-        this->buffsize = buffsize;
-        this->rxPin = rxPin;
-        this->txPin = txPin;
-        this->queSize = queSize;
-        this->eventGroup = p_eventGroup;
-        this->colorSensorBit = eb;
+        uartNum = uartNum;
+        cameraUart = uartConfig;
+        buffsize = buffsize;
+        rxPin = rxPin;
+        txPin = txPin;
+        queSize = queSize;
 
-        if (!queHandle)
-        {
-            queHandle = xQueueCreate(queSize, sizeof(uart_event_t));
-        }
-        if (queHandle == nullptr)
-            return false;
-
-        this->queHandle = queHandle;
+        QueueHandle_t rawQueue = nullptr;
 
         uart_param_config(this->uartNum, &this->cameraUart);
         uart_set_pin(this->uartNum, this->txPin, this->rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-        uart_driver_install(this->uartNum, this->buffsize, 0, this->queSize, &this->queHandle, 0);
+        if (uart_driver_install(this->uartNum, this->buffsize, 0, this->queSize, &rawQueue, 0) != ESP_OK)
+        {
+            return false;
+        }
+
+        if (rawQueue == nullptr)
+            return false;
+
+        this->queHandle = EventQueue<QueueHandle_t>{rawQueue};
 
         // xTaskCreate(uart_task_wrapper, "uartTask", 4096, this, 5, &task);
 
@@ -125,39 +121,34 @@ public:
         uart_pattern_queue_reset(this->uartNum, this->queSize);
 
         return true;
-    }
+    }*/
 
-    Camera(pc_uart_config_t uartConfig,
-           uart_port_t uartNum,
-           int buffsize,
-           int rxPin,
-           int txPin,
+    Camera(int buffsize,
            int queSize,
-           QueueHandle_t queHandle,
-           EventGroup<EventGroupHandle_t> &p_eventGroup,
-           EventBits_t eb,
-           FREETask &task)
-        : cameraUart(uartConfig),
+           const pc_uart_config_t &uartCfg,
+           uart_port_t uartNum,
+           int txPin,
+           int rxPin,
+           EventQueue<QueueHandle_t> queHandle,
+           const EventGroup<EventGroupHandle_t> &eg)
+        : cameraUart(uartCfg),
           uartNum(uartNum),
           buffsize(buffsize),
           rxPin(rxPin),
           txPin(txPin),
           queSize(queSize),
           queHandle(queHandle),
-          eventGroup(p_eventGroup),
-          colorSensorBit(eb),
-          task(task)
+          eventGroup(eg)
     {
     }
 
-    static etl::EventFlags<Camera> create(int buffsize,
-                                          int queSize,
-                                          pc_uart_config_t &uartCfg,
-                                          uart_port_t uartNum,
-                                          uint16_t txPin,
-                                          uint16_t rxPin,
-                                          EventGroupHandle_t &eg,
-                                          EventBits_t eb);
+    static etl::optional<Camera> create(int buffsize,
+                                        int queSize,
+                                        const pc_uart_config_t &uartCfg,
+                                        uart_port_t uartNum,
+                                        int txPin,
+                                        int rxPin,
+                                        const EventGroup<EventGroupHandle_t> &eg);
 
     bool stopListeningIT();
     bool listenIT();
