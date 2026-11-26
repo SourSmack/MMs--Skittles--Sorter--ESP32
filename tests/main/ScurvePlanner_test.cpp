@@ -5,29 +5,12 @@
 #include "ScurvePlanner.hpp"
 #include "moveStructures.hpp"
 
-
-
 using ::testing::Return;
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Mock;
 
-using RESULT = Scurve::RESULT ;
-
-
-/*struct Move {     
-    double steps{ 0 } ;
-    // measureUnit / speedUnit^2 |   measureUnit^2 / speedUnit
-    // describes accelaration and constant movement 
-    double startAcc{ 0 }   , maxAcc { 0 },  endAcc{ 0 } ; 
-
-    double startSpeed{ 0 } , traversalSpeed{ 0 } , endSpeed{ 0 } ; 
-
-    // how many units to make with assigned speed in regards to part of the move (start,traversal,end) 
-    double startSteps{0} , traversalSteps{0} , endSteps  {0}; 
-
-};*/
-
+using RESULT = Scurve::RESULT;
 
 class EnqueueCallbackMock {
 public:
@@ -45,12 +28,13 @@ void testAdapter(const RESULT& move) {
 
 class ScurveTesting : public ::testing::Test {
 protected:
-    TaskMOCK taskMock ;
-    ScurvePlanner< moveBlock_t ,  TaskMOCK > planner{ taskMock , testAdapter}; 
+    TaskMOCK taskMock;
+    ScurvePlanner<moveBlock_t, TaskMOCK> planner{ taskMock, testAdapter };
 
-    void runTask(){
-        ScurvePlanner< moveBlock_t, TaskMOCK >::scurveTask( &planner ) ;
+    void runTask() {
+        ScurvePlanner<moveBlock_t, TaskMOCK>::scurveTask(&planner);
     }
+
     void SetUp() override {
         g_callbackMock = new EnqueueCallbackMock();
     }
@@ -58,9 +42,9 @@ protected:
     void TearDown() override {
         delete g_callbackMock;
         g_callbackMock = nullptr;
-        
-        
-        Mock::VerifyAndClearExpectations( &staticMethodsTaskMOCK );
+
+        Mock::VerifyAndClearExpectations(&taskMockImpl);
+        Mock::VerifyAndClearExpectations(&staticMethodsTaskMOCK);
     }
 };
 
@@ -69,9 +53,8 @@ protected:
 // ==============================================================================
 using StartTest = ScurveTesting;
 
-
 TEST_F(StartTest, failsWhenTaskIsAlreadyRunning) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(true));
 
     EXPECT_FALSE(planner.start(testAdapter));
@@ -79,10 +62,10 @@ TEST_F(StartTest, failsWhenTaskIsAlreadyRunning) {
 
 // Krok 2: Wychodzi na `if ( !taskHandle.start() )`
 TEST_F(StartTest, failsWhenTaskStartFails) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(false));
-    
-    EXPECT_CALL(taskMock, start())
+
+    EXPECT_CALL(taskMockImpl, start())
         .WillOnce(Return(false));
 
     EXPECT_FALSE(planner.start(testAdapter));
@@ -90,10 +73,10 @@ TEST_F(StartTest, failsWhenTaskStartFails) {
 
 // Krok 3: Przechodzi wszystkie warunki (sukces)
 TEST_F(StartTest, succeedsWhenTaskStartsSuccessfully) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(false));
-    
-    EXPECT_CALL(taskMock, start())
+
+    EXPECT_CALL(taskMockImpl, start())
         .WillOnce(Return(true));
 
     EXPECT_TRUE(planner.start(testAdapter));
@@ -106,7 +89,7 @@ using StopTest = ScurveTesting;
 
 // Krok 1: Wychodzi na `if ( !taskHandle.isRunning() )`
 TEST_F(StopTest, succeedsImmediatelyIfNotRunning) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(false));
 
     EXPECT_TRUE(planner.stop());
@@ -114,10 +97,10 @@ TEST_F(StopTest, succeedsImmediatelyIfNotRunning) {
 
 // Krok 2: Wychodzi na `if ( !taskHandle.join() )`
 TEST_F(StopTest, failsIfTaskJoinFails) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(true));
-        
-    EXPECT_CALL(taskMock, join())
+
+    EXPECT_CALL(taskMockImpl, join())
         .WillOnce(Return(false));
 
     EXPECT_FALSE(planner.stop());
@@ -125,10 +108,10 @@ TEST_F(StopTest, failsIfTaskJoinFails) {
 
 // Krok 3: Przechodzi wszystkie warunki (sukces)
 TEST_F(StopTest, succeedsIfTaskJoinSucceeds) {
-    EXPECT_CALL(taskMock, isRunning())
+    EXPECT_CALL(taskMockImpl, isRunning())
         .WillOnce(Return(true));
-        
-    EXPECT_CALL(taskMock, join())
+
+    EXPECT_CALL(taskMockImpl, join())
         .WillOnce(Return(true));
 
     EXPECT_TRUE(planner.stop());
@@ -141,23 +124,23 @@ using ControlBitsTest = ScurveTesting;
 
 // pauseBit w ScurvePlanner ma wartość 1 << 1 (czyli 2)
 TEST_F(ControlBitsTest, pauseFailsIfNotifyFails) {
-    EXPECT_CALL(taskMock, notify(2)).WillOnce(Return(false));
+    EXPECT_CALL(taskMockImpl, notify(2)).WillOnce(Return(false));
     EXPECT_FALSE(planner.pause());
 }
 
 TEST_F(ControlBitsTest, pauseSucceedsIfNotifySucceeds) {
-    EXPECT_CALL(taskMock, notify(2)).WillOnce(Return(true));
+    EXPECT_CALL(taskMockImpl, notify(2)).WillOnce(Return(true));
     EXPECT_TRUE(planner.pause());
 }
 
 // resumeBit ma wartość 1 << 2 (czyli 4)
 TEST_F(ControlBitsTest, resumeFailsIfNotifyFails) {
-    EXPECT_CALL(taskMock, notify(4)).WillOnce(Return(false));
+    EXPECT_CALL(taskMockImpl, notify(4)).WillOnce(Return(false));
     EXPECT_FALSE(planner.resume());
 }
 
 TEST_F(ControlBitsTest, resumeSucceedsIfNotifySucceeds) {
-    EXPECT_CALL(taskMock, notify(4)).WillOnce(Return(true));
+    EXPECT_CALL(taskMockImpl, notify(4)).WillOnce(Return(true));
     EXPECT_TRUE(planner.resume());
 }
 
@@ -175,7 +158,7 @@ TEST_F(EnqueueTest, successfullyQueuesMotion) {
 // Test integracyjny bufora: zapełnianie krok po kroku
 TEST_F(EnqueueTest, fillsBufferAndRejectsExcess) {
     moveBlock_t motion{};
-    
+
     // Zapełniamy do limitu (MAXBUFFOR = 64)
     for (int i = 0; i < 64; ++i) {
         EXPECT_TRUE(planner.enqueue(motion)) << "Powinno dodać element na indeksie " << i;
@@ -192,16 +175,7 @@ using TaskLoopTest = ScurveTesting;
 
 // Testujemy, czy funkcja Taska zatrzyma się, gdy `stopRequested()` zwróci true
 TEST_F(TaskLoopTest, taskExitsOnStopRequest) {
-    // Od razu przy pierwszym sprawdzeniu warunku pętli zwracamy "true"
-testing::InSequence seq ; 
+    testing::InSequence seq;
     EXPECT_CALL(staticMethodsTaskMOCK, stopRequested());
-    
-    EXPECT_CALL( staticMethodsTaskMOCK , waitForNotify( _ , _ )).WillOnce( Return( false )) ;
-
-
-
-           
+    EXPECT_CALL(staticMethodsTaskMOCK, waitForNotify(_, _)).WillOnce(Return(false));
 }
-
-
-

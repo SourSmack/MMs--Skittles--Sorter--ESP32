@@ -6,111 +6,74 @@
 #include "Nema.hpp"
 #include "mocks.hpp"
 
-class NemaTesting : public ::testing::Test{
+class NemaTesting : public ::testing::Test {
 protected:
+    PlannerMOCK planner;
+    StepperMOCK stepper;
+    TaskMOCK task;
 
-    PlannerMOCK planner ;
-    StepperMOCK stepper ;
-    testing::NiceMock< TaskMOCK> task ;
-
-    Nema< PlannerMOCK , StepperMOCK , TaskMOCK > nemaEngine{ 0 , 0 , planner , stepper , task } ;
+    Nema<PlannerMOCK, StepperMOCK, TaskMOCK> nemaEngine{ 0, 0, planner, stepper, task };
     const motionBlock_t VALID_BLOCK { 1, 2, true };
     const motionBlock_t INVALID_BLOCK { 0, 0, false };
-    
 
+    void TearDown() override {
+        testing::Mock::VerifyAndClearExpectations(&plannerMockImpl);
+        testing::Mock::VerifyAndClearExpectations(&stepperMockImpl);
+        testing::Mock::VerifyAndClearExpectations(&taskMockImpl);
+    }
 };
 
-using start  = NemaTesting ;
-using moveToCup  = NemaTesting ;
+using start = NemaTesting;
+using moveToCup = NemaTesting;
 
 using ::testing::_;
 using ::testing::Return;
 
-TEST_F( start , HappyPath){
+TEST_F(start, HappyPath) {
+    testing::InSequence seq;
 
-    testing::InSequence seq ;
-    
-    EXPECT_CALL( stepper , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
-/*    bool start()  {
-        stepper.start();
-        scurve.start() ; 
-        task.start() ;
+    EXPECT_CALL(stepperMockImpl, start()).Times(1).WillOnce(Return(true));
+    EXPECT_CALL(plannerMockImpl, start()).Times(1).WillOnce(Return(true));
+    EXPECT_CALL(taskMockImpl, start()).Times(1).WillOnce(Return(true));
 
-        running  = true ;
+    auto result = nemaEngine.start();
 
-        return true; 
-     }
-*/ 
-
-    EXPECT_CALL( planner , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
-
-    EXPECT_CALL( task , start() ).Times(1).WillOnce( testing::Return( true ) ) ;
-
-    auto result = nemaEngine.start() ;
-
-    EXPECT_EQ( result , true ) ;
-
-
+    EXPECT_EQ(result, true);
 }
 
-TEST_F(moveToCup , HappyPathEnqueue){
-    EXPECT_CALL(stepper, start()).WillOnce(testing::Return(true));
-    EXPECT_CALL(planner, start()).WillOnce(testing::Return(true));
-    EXPECT_CALL(task, start()).WillOnce(testing::Return(true));
-    
-    nemaEngine.start(); // <--- KLUCZ! Teraz running = true!
-    testing::InSequence seq ; 
+TEST_F(moveToCup, HappyPathEnqueue) {
+    EXPECT_CALL(stepperMockImpl, start()).WillOnce(Return(true));
+    EXPECT_CALL(plannerMockImpl, start()).WillOnce(Return(true));
+    EXPECT_CALL(taskMockImpl, start()).WillOnce(Return(true));
 
-    EXPECT_CALL( planner , enqueue( testing::_ ) ).Times(1); 
+    nemaEngine.start();
+    testing::InSequence seq;
 
-    nemaEngine.moveToCup( moveBlock_t{ 0 } ,  moveInfo_t{ true , true  }, 0 ); 
-/*void moveToCup( const moveBlock_t &move , const moveInfo_t flags = {}, const int wait  = 0   ){
-        // seperate task that moves from plannner to stepper and seperate task for planner that makes moves 
-        // moveToCup  just manages whether instantly make moveo or enqu in normal manner
-        // manages que position motionBlock_t
-        if ( !running) return ;
+    EXPECT_CALL(plannerMockImpl, enqueue(_)).Times(1);
 
-        if  ( flags.enqueue ){
-
-            scurve->enqueue( move ) ;
-        }
-        else{
-            // TODO (MAYBE) stop engine -> do new steps 
-            // rn it is sloppy bcs we only skip Planner queue which is unintuitive imo 
-            // so I'd have to have direct engine steering api 49kkkkk
-            scurve->stop() ;  
-            while ( auto motion  = scurve->calculateFrequency( move ) ){
-                stepper->enqueue( motion ) ; 
-            }
-            scurve->start();
-        }
-    }
-*/
-
+    nemaEngine.moveToCup(moveBlock_t{ 0 }, moveInfo_t{ true, true }, 0);
 }
 
+TEST_F(moveToCup, HappyPathNotEnqueue) {
+    EXPECT_CALL(stepperMockImpl, start()).WillOnce(Return(true));
+    EXPECT_CALL(plannerMockImpl, start()).WillOnce(Return(true));
+    EXPECT_CALL(taskMockImpl, start()).WillOnce(Return(true));
 
-TEST_F( moveToCup , HappyPathNotEnqueue){
-    EXPECT_CALL(stepper, start()).WillOnce(testing::Return(true));
-    EXPECT_CALL(planner, start()).WillOnce(testing::Return(true));
-    EXPECT_CALL(task, start()).WillOnce(testing::Return(true));
-    
-    nemaEngine.start();    
-    
+    nemaEngine.start();
 
-    EXPECT_CALL( planner , stop()).Times( 1 ) ;
-    
-    EXPECT_CALL( planner , calculateFrequency( testing::_ ))
-        .WillOnce( testing::Return( VALID_BLOCK ))
-        .WillOnce( testing::Return( VALID_BLOCK ))
-        .WillOnce( testing::Return( VALID_BLOCK ))
-        .WillOnce( testing::Return( VALID_BLOCK ))
-        .WillOnce( testing::Return( INVALID_BLOCK )) ;
+    testing::InSequence seq;
 
-    EXPECT_CALL( stepper , enqueue( testing::_ )).Times(4 ) ;
-    EXPECT_CALL( planner , start() ).Times( 1 ) ;
+    EXPECT_CALL(plannerMockImpl, stop()).Times(1);
 
-    nemaEngine.moveToCup( moveBlock_t{ 0 } ,  moveInfo_t{ false  , false  }, 0 ) ;
+    EXPECT_CALL(plannerMockImpl, calculateFrequency(_))
+        .WillOnce(Return(VALID_BLOCK))
+        .WillOnce(Return(VALID_BLOCK))
+        .WillOnce(Return(VALID_BLOCK))
+        .WillOnce(Return(VALID_BLOCK))
+        .WillOnce(Return(INVALID_BLOCK));
+
+    EXPECT_CALL(stepperMockImpl, enqueue(_)).Times(4);
+    EXPECT_CALL(plannerMockImpl, start()).Times(1);
+
+    nemaEngine.moveToCup(moveBlock_t{ 0 }, moveInfo_t{ false, false }, 0);
 }
-
-

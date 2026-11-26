@@ -66,7 +66,7 @@ void __wrap_vPortYield(void) {
 }
 
 void dummyFunction( void * arg){
-    while ( !Mission::stopRequested() ){
+    while ( !Mission<TaskHandle_t>::stopRequested() ){
         std::cout << "doing something ..." << std::endl ;
     }
     std::cout << "stopRequested() called , exiting dummyFunction" << std::endl ;
@@ -76,7 +76,7 @@ void dummyFunction( void * arg){
 class FREERTOSTest : public ::testing::Test {
 protected:
     MockFreeRTOS rtosMock;
-    Mission dummyTask{ dummyFunction, nullptr, 2048, 5 };
+    Mission<TaskHandle_t> dummyTask{ dummyFunction, nullptr, 2048, 5 };
 
     void SetUp() override {
         g_freeRTOS = &rtosMock;
@@ -127,7 +127,7 @@ TEST_F(FREERTOS_notify_test, ReturnsFalseWhenNotifyFails) {
     EXPECT_FALSE(result);
 }
 /*
-bool Mission::notify( const uint32_t message )   {
+bool Mission<TaskHandle_t>::notify( const uint32_t message )   {
     auto result = xTaskNotify( taskHandle , message , eSetBits ) ;
     if ( result != pdPASS) return false ; 
     return true ;
@@ -146,7 +146,7 @@ TEST_F( FREERTOS_requestStop_test , notifiedNOTSuccess){
     EXPECT_FALSE( result ) ;
 }
 /*
-bool Mission::requestStop()  {
+bool Mission<TaskHandle_t>::requestStop()  {
     auto result = xTaskNotify( taskHandle , stopBit , eSetBits  ) ;
     if ( result != pdPASS) return false ; 
     return true ;
@@ -184,7 +184,7 @@ EXPECT_CALL(rtosMock, xTaskGenericNotify(testing::_, testing::_, testing::_, tes
     setTaskRunning( false ) ;
 }
 /*
-bool Mission::join(){
+bool Mission<TaskHandle_t>::join(){
     if ( !taskRunning ) return true ;
     if ( !requestStop() ) return false ;
     while ( taskRunning ){ taskYIELD(); }
@@ -201,7 +201,7 @@ TEST_F( FREERTOS_start_test, xTaskCreateFAIL ){
     EXPECT_FALSE( dummyTask.start() ) ;
 }
 /*
-bool Mission::start() {
+bool Mission<TaskHandle_t>::start() {
     auto result  = xTaskCreate( task , "task" , stackSize , arg  , priority , &taskHandle ) ;
     if ( !pdPASS ) return false ; 
     return true; 
@@ -212,7 +212,7 @@ TEST_F( FREERTOS_stopRequested_test , noNotificationAvaiable ){
     EXPECT_CALL(rtosMock, xTaskGenericNotifyWait(_, _, _, _, _))
         .WillOnce(Return(pdFAIL));
 
-    EXPECT_FALSE( Mission::stopRequested() );
+    EXPECT_FALSE( Mission<TaskHandle_t>::stopRequested() );
 }
 
 TEST_F( FREERTOS_stopRequested_test , incorrectSignal ){
@@ -225,26 +225,26 @@ TEST_F( FREERTOS_stopRequested_test , incorrectSignal ){
             Return(pdPASS)               
         ));
 
-    EXPECT_FALSE( Mission::stopRequested() );
+    EXPECT_FALSE( Mission<TaskHandle_t>::stopRequested() );
 }
 TEST_F( FREERTOS_stopRequested_test , happyPath ){
     
     EXPECT_CALL(rtosMock, xTaskGenericNotifyWait(_, _, _, _, _))
         .WillOnce(DoAll(
-            SetArgPointee<3>( Mission::stopBit ), 
+            SetArgPointee<3>( Mission<TaskHandle_t>::stopBit ), 
             Return(pdPASS)                           
         ));
 
-    EXPECT_TRUE( Mission::stopRequested() );
+    EXPECT_TRUE( Mission<TaskHandle_t>::stopRequested() );
 }
 /*
-bool Mission::stopRequested(   ){
+bool Mission<TaskHandle_t>::stopRequested(   ){
     uint32_t result { 0 } ;
     if ( !xTaskNotifyWait( 0 , stopBit ,  &result , 0  )) return false ;
     if ( result & stopBitMask ) return true ;
     return false ;
 }
-bool Mission::waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay ){
+bool Mission<TaskHandle_t>::waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay ){
     uint32_t result { 0 } ;
     auto delay = ( p_delay == MAX_DELAY ) ? (  portMAX_DELAY ) : pdMS_TO_TICKS( p_delay ) ;
     if ( !xTaskNotifyWait( 0 ,  waitBitMask , &result , delay )) return false ;
@@ -255,7 +255,7 @@ bool Mission::waitForNotify( const uint32_t waitBitMask , const uint32_t p_delay
 
 }
 
-void Mission::waitMs( const uint32_t ms ) {
+void Mission<TaskHandle_t>::waitMs( const uint32_t ms ) {
     vTaskDelay( pdMS_TO_TICKS( ms ) ) ;
 }
 
